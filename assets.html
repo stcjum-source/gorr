@@ -57,21 +57,24 @@ h1{font-size:20px;font-weight:700}
 
 .btn-add{background:var(--acc);color:var(--bg);border:none;border-radius:var(--rs);padding:12px;width:100%;font-size:14px;font-weight:600;margin-top:8px;cursor:pointer}
 
-.modal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);display:none;align-items:center;justify-content:center;padding:16px;z-index:100}
-.modal-content{background:var(--bg);border-radius:var(--r);padding:20px;width:100%;max-width:400px;box-shadow:0 4px 12px rgba(0,0,0,0.15)}
-.modal-title{font-size:16px;font-weight:700;margin-bottom:16px}
-.form-group{margin-bottom:12px}
-.form-group label{display:block;font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600}
-.form-group input{width:100%;padding:10px;border:1px solid var(--border);border-radius:var(--rs);font-size:14px;background:var(--bg);color:var(--text)}
-.form-group input:focus{outline:none;border-color:var(--text2)}
-.modal-btns{display:flex;gap:8px;margin-top:20px}
-.modal-btns button{flex:1;padding:12px;border-radius:var(--rs);font-size:14px;font-weight:600;cursor:pointer;border:none}
-.btn-cancel{background:var(--bg3);color:var(--text)}
+/* 하단 시트 팝업 스타일 양식 보존 */
+.sheet-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);display:none;z-index:100;align-items:flex-end}
+.sheet{background:var(--bg);width:100%;max-width:600px;margin:0 auto;border-top-left-radius:var(--r);border-top-right-radius:var(--r);padding:20px;padding-bottom:calc(20px + env(safe-area-inset-bottom));box-shadow:0 -4px 12px rgba(0,0,0,0.15);transform:translateY(100%);transition:transform 0.25s ease-out;display:flex;flex-direction:column;gap:16px}
+.sheet.show{transform:translateY(0)}
+.sheet-header{display:flex;justify-content:space-between;align-items:center}
+.sheet-title{font-size:16px;font-weight:700}
+.btn-close{background:none;border:none;color:var(--text2);font-size:14px;font-weight:600;cursor:pointer}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group label{font-size:11px;color:var(--text2);font-weight:600}
+.form-group input{padding:12px;border:1px solid var(--border);border-radius:var(--rs);font-size:15px;background:var(--bg2);color:var(--text);width:100%}
+.form-group input:focus{outline:none;border-color:var(--text2);background:var(--bg)}
+.sheet-btns{display:flex;gap:8px;margin-top:8px}
+.sheet-btns button{flex:1;padding:14px;border-radius:var(--rs);font-size:15px;font-weight:700;border:none;cursor:pointer}
 .btn-save{background:var(--acc);color:var(--bg)}
-.btn-del{background:var(--red-bg);color:var(--red);margin-right:auto;padding:12px 16px!important;flex:none!important}
+.btn-del{background:var(--red-bg);color:var(--red)}
 
 #roomSetup{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:200;padding:40px 20px}
-.setup-box{max-width:400px;margin:0 auto;text-align:center}
+.setup-box{max-width:400px;margin:0 auto;text-align:center;padding-top:100px}
 .setup-title{font-size:24px;font-weight:800;margin-bottom:8px}
 .setup-desc{font-size:13px;color:var(--text2);margin-bottom:24px}
 </style>
@@ -84,8 +87,8 @@ h1{font-size:20px;font-weight:700}
   <div class="setup-box">
     <div class="setup-title">자산 관리 공유</div>
     <div class="setup-desc">부부가 함께 사용할 공유 코드를 입력해주세요.</div>
-    <div class="form-group">
-      <input type="text" id="roomCodeInput" placeholder="예: ourcouple123" style="text-align:center;font-size:18px;font-weight:700;letter-spacing:1px">
+    <div class="form-group" style="margin-bottom:16px">
+      <input type="text" id="roomCodeInput" placeholder="예: ourcouple123" style="text-align:center;font-size:18px;font-weight:700;letter-spacing:1px;background:var(--bg3)">
     </div>
     <button class="btn-add" onclick="setRoom()">시작하기</button>
   </div>
@@ -111,71 +114,67 @@ h1{font-size:20px;font-weight:700}
 
     <div id="sect-stock">
       <div id="list-stock"></div>
-      <button class="btn-add" onclick="openAdd('stock')">+ 투자 자산 추가</button>
+      <button class="btn-add" onclick="openForm('stock')">+ 투자 자산 추가</button>
     </div>
     <div id="sect-cash" style="display:none">
       <div id="list-cash"></div>
-      <button class="btn-add" onclick="openAdd('cash')">+ 자산 항목 추가</button>
+      <button class="btn-add" onclick="openForm('cash')">+ 자산 항목 추가</button>
     </div>
   </div>
 </div>
 
-<div class="modal" id="modalStock" onclick="if(event.target===this)closeModal()">
-  <div class="modal-content">
-    <div class="modal-title" id="mStockTitle">투자 자산 추가</div>
-    <div class="form-group">
-      <label>티커 / 심볼 (예: AAPL, TSLA, 005930, BTC)</label>
-      <input type="text" id="fTicker" placeholder="정확한 티커를 입력하세요">
+<div class="sheet-overlay" id="sheetOverlay" onclick="if(event.target===this)closeForm()">
+  <div class="sheet" id="formSheet">
+    <div class="sheet-header">
+      <div class="sheet-title" id="sheetTitle">자산 추가</div>
+      <button class="btn-close" onclick="closeForm()">닫기</button>
     </div>
-    <div class="form-group">
-      <label>자산명 (화면에 표시될 이름)</label>
-      <input type="text" id="fStockName" placeholder="예: 테슬라, 비트코인">
+    
+    <div id="form-stock-fields" style="display:none; flex-direction:column; gap:16px;">
+      <div class="form-group">
+        <label>티커 / 심볼 (예: AAPL, TSLA, 005930, BTC)</label>
+        <input type="text" id="fTicker" placeholder="정확한 심볼을 입력하세요">
+      </div>
+      <div class="form-group">
+        <label>자산명 (화면 표시 이름)</label>
+        <input type="text" id="fStockName" placeholder="예: 테슬라, 비트코인">
+      </div>
+      <div class="form-group">
+        <label>보유 수량</label>
+        <input type="number" step="any" id="fQty" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label>매수 평단가</label>
+        <input type="number" step="any" id="fAvgPrice" placeholder="0">
+      </div>
     </div>
-    <div class="form-group">
-      <label>보유 수량</label>
-      <input type="number" step="any" id="fQty" placeholder="0">
-    </div>
-    <div class="form-group">
-      <label>매수 평단가</label>
-      <input type="number" step="any" id="fAvgPrice" placeholder="0">
-    </div>
-    <div class="form-group">
-      <label>메모</label>
-      <input type="text" id="fStockMemo" placeholder="간단한 메모">
-    </div>
-    <div class="modal-btns">
-      <button class="btn-del" id="btnStockDel" onclick="delStock()">삭제</button>
-      <button class="btn-cancel" onclick="closeModal()">취소</button>
-      <button class="btn-save" onclick="saveStock()">저장</button>
-    </div>
-  </div>
-</div>
 
-<div class="modal" id="modalCash" onclick="if(event.target===this)closeModal()">
-  <div class="modal-content">
-    <div class="modal-title" id="mCashTitle">자산 항목 추가</div>
-    <div class="form-group">
-      <label>항목명</label>
-      <input type="text" id="fCashName" placeholder="예: 신한은행 계좌, 전세보증금">
+    <div id="form-cash-fields" style="display:none; flex-direction:column; gap:16px;">
+      <div class="form-group">
+        <label>항목명</label>
+        <input type="text" id="fCashName" placeholder="예: 신한은행 계좌, 전세보증금">
+      </div>
+      <div class="form-group">
+        <label>금액 (원)</label>
+        <input type="number" id="fCashAmt" placeholder="0">
+      </div>
     </div>
-    <div class="form-group">
-      <label>금액 (원)</label>
-      <input type="number" id="fCashAmt" placeholder="0">
-    </div>
+
     <div class="form-group">
       <label>메모</label>
-      <input type="text" id="fCashMemo" placeholder="간단한 메모">
+      <input type="text" id="fMemo" placeholder="간단한 메모">
     </div>
-    <div class="modal-btns">
-      <button class="btn-del" id="btnCashDel" onclick="delCash()">삭제</button>
-      <button class="btn-cancel" onclick="closeModal()">취소</button>
-      <button class="btn-save" onclick="saveCash()">저장</button>
+
+    <div class="sheet-btns">
+      <button class="btn-del" id="btnDelete" onclick="handleDelete()" style="display:none">삭제</button>
+      <button class="btn-save" onclick="handleSave()">저장하기</button>
     </div>
   </div>
 </div>
 
 <script>
-// ── 파이어베이스 설정 (기존 정보 그대로 유지됨) ───────────────────────
+// ── 파이어베이스 설정 ──────────────────────────────────
+// ※ 중요: 본인의 Firebase 인증 정보를 여기에 그대로 붙여넣으세요!
 const firebaseConfig = {
   apiKey: "AIzaSyAsB...", 
   authDomain: "asset...",
@@ -221,7 +220,7 @@ function fbSave(key, arr) {
   db.ref('rooms/' + ROOM + '/' + key).set(arr);
 }
 
-// ── 가격 업데이트 로직 (코인 우회 프록시 완벽 반영) ───────────────────────
+// ── 가격 업데이트 로직 (업비트 및 야후파이낸스 올인원 프록시 우회 완벽 적용) ──────────────────
 async function updatePrices() {
   if (!live.stock || live.stock.length === 0) {
     document.getElementById('syncTime').innerText = '데이터 없음';
@@ -247,19 +246,18 @@ async function updatePrices() {
 
   live.stock.forEach(item => {
     const t = item.ticker.toUpperCase().trim();
-    // 주요 코인 목록이거나 KRW-로 시작하면 크립토로 분류
     if (['BTC', 'ETH', 'XRP', 'SOL', 'ADA', 'DOGE', 'AVAX', 'DOT'].includes(t) || t.startsWith('KRW-')) {
       upbitTickers.push(t.startsWith('KRW-') ? t : 'KRW-' + t);
     } else {
       if (/^\d{6}$/.test(t)) {
-        yahooTickers.push(t + '.KS'); // 국내 주식
+        yahooTickers.push(t + '.KS');
       } else {
-        yahooTickers.push(t); // 해외 주식
+        yahooTickers.push(t);
       }
     }
   });
 
-  // 2. 코인 (업비트) 시세 가져오기 -> CORS 우회 적용 완료
+  // 2. 코인 시세 가져오기 (CORS 우회 반영)
   if (upbitTickers.length > 0) {
     try {
       const upbitUrl = `https://api.upbit.com/v1/ticker?markets=${upbitTickers.join(',')}`;
@@ -281,7 +279,7 @@ async function updatePrices() {
     }
   }
 
-  // 3. 주식 (야후 파이낸스) 시세 가져오기
+  // 3. 주식 시세 가져오기
   for (const ticker of yahooTickers) {
     try {
       const cleanTicker = ticker.replace('.KS', '');
@@ -316,6 +314,7 @@ function render() {
   let totalEvalKrw = 0;
   let totalPurchaseKrw = 0;
 
+  // 현금 렌더링
   const cashList = document.getElementById('list-cash');
   cashList.innerHTML = '';
   (live.cash || []).forEach(item => {
@@ -323,7 +322,7 @@ function render() {
     
     const div = document.createElement('div');
     div.className = 'list-item';
-    div.onclick = () => openEdit('cash', item.id);
+    div.onclick = () => openForm('cash', item.id);
     div.innerHTML = `
       <div class="item-info">
         <span class="item-name">${item.name}</span>
@@ -336,6 +335,7 @@ function render() {
     cashList.appendChild(div);
   });
 
+  // 주식/코인 렌더링
   const stockList = document.getElementById('list-stock');
   stockList.innerHTML = '';
   (live.stock || []).forEach(item => {
@@ -367,11 +367,10 @@ function render() {
 
     const div = document.createElement('div');
     div.className = 'list-item';
-    div.onclick = () => openEdit('stock', item.id);
+    div.onclick = () => openForm('stock', item.id);
     
     const sign = itemProfitKrw >= 0 ? '+' : '';
     const colorClass = itemProfitKrw > 0 ? 'up' : (itemProfitKrw < 0 ? 'down' : '');
-    const formattedPrice = isUsd ? `$${currentPrice.toFixed(2)}` : `${Math.round(currentPrice).toLocaleString()}원`;
 
     div.innerHTML = `
       <div class="item-info">
@@ -408,111 +407,111 @@ function switchTab(tab) {
   document.getElementById('sect-cash').style.display = tab === 'cash' ? 'block' : 'none';
 }
 
-function openAdd(mode) {
-  S.mode = mode; S.editId = null;
-  if(mode === 'stock') {
-    document.getElementById('mStockTitle').innerText = '투자 자산 추가';
+// ── 하단 시트 폼 제어 및 원본 저장/삭제 비즈니스 로직 보존 ──────────────────
+function openForm(mode, id = null) {
+  S.mode = mode;
+  S.editId = id;
+  
+  // 입력 필드 초기화 및 켜기
+  document.getElementById('form-stock-fields').style.display = mode === 'stock' ? 'flex' : 'none';
+  document.getElementById('form-cash-fields').style.display = mode === 'cash' ? 'flex' : 'none';
+  document.getElementById('btnDelete').style.display = id ? 'block' : 'none';
+  
+  if (id) {
+    document.getElementById('sheetTitle').innerText = mode === 'stock' ? '투자 자산 수정' : '자산 항목 수정';
+    if (mode === 'stock') {
+      const item = live.stock.find(i => i.id === id);
+      if(item) {
+        document.getElementById('fTicker').value = item.ticker || '';
+        document.getElementById('fStockName').value = item.name || '';
+        document.getElementById('fQty').value = item.qty || '';
+        document.getElementById('fAvgPrice').value = item.avgPrice || '';
+        document.getElementById('fMemo').value = item.memo || '';
+      }
+    } else {
+      const item = live.cash.find(i => i.id === id);
+      if(item) {
+        document.getElementById('fCashName').value = item.name || '';
+        document.getElementById('fCashAmt').value = item.amount || '';
+        document.getElementById('fMemo').value = item.memo || '';
+      }
+    }
+  } else {
+    document.getElementById('sheetTitle').innerText = mode === 'stock' ? '투자 자산 추가' : '자산 항목 추가';
     document.getElementById('fTicker').value = '';
     document.getElementById('fStockName').value = '';
     document.getElementById('fQty').value = '';
     document.getElementById('fAvgPrice').value = '';
-    document.getElementById('fStockMemo').value = '';
-    document.getElementById('btnStockDel').style.display = 'none';
-    document.getElementById('modalStock').style.display = 'flex';
-  } else {
-    document.getElementById('mCashTitle').innerText = '자산 항목 추가';
     document.getElementById('fCashName').value = '';
     document.getElementById('fCashAmt').value = '';
-    document.getElementById('fCashMemo').value = '';
-    document.getElementById('btnCashDel').style.display = 'none';
-    document.getElementById('modalCash').style.display = 'flex';
+    document.getElementById('fMemo').value = '';
   }
+
+  const overlay = document.getElementById('sheetOverlay');
+  const sheet = document.getElementById('formSheet');
+  overlay.style.display = 'flex';
+  setTimeout(() => sheet.classList.add('show'), 10);
 }
 
-function openEdit(mode, id) {
-  S.mode = mode; S.editId = id;
-  if(mode === 'stock') {
-    const item = live.stock.find(i => i.id === id);
-    if(!item) return;
-    document.getElementById('mStockTitle').innerText = '투자 자산 수정';
-    document.getElementById('fTicker').value = item.ticker || '';
-    document.getElementById('fStockName').value = item.name || '';
-    document.getElementById('fQty').value = item.qty || '';
-    document.getElementById('fAvgPrice').value = item.avgPrice || '';
-    document.getElementById('fStockMemo').value = item.memo || '';
-    document.getElementById('btnStockDel').style.display = 'block';
-    document.getElementById('modalStock').style.display = 'flex';
+function closeForm() {
+  const sheet = document.getElementById('formSheet');
+  const overlay = document.getElementById('sheetOverlay');
+  sheet.classList.remove('show');
+  setTimeout(() => overlay.style.display = 'none', 250);
+}
+
+// 원본 통합 저장 로직 복원 및 바인딩 완료
+function handleSave() {
+  const memo = document.getElementById('fMemo').value.trim();
+
+  if (S.mode === 'stock') {
+    const ticker = document.getElementById('fTicker').value.trim();
+    const name = document.getElementById('fStockName').value.trim();
+    const qty = parseFloat(document.getElementById('fQty').value || '0') || 0;
+    const avgPrice = parseFloat(document.getElementById('fAvgPrice').value || '0') || 0;
+
+    if(!ticker || !name) { alert('티커와 자산명을 입력해주세요'); return; }
+
+    const arr = [...(live.stock || [])];
+    const newItem = { id: S.editId || 'stock' + Date.now(), ticker, name, qty, avgPrice, memo };
+
+    if (S.editId) {
+      const idx = arr.findIndex(i => i.id === S.editId);
+      if(idx >= 0) arr[idx] = newItem;
+    } else {
+      arr.push(newItem);
+    }
+    fbSave('stock', arr);
   } else {
-    const item = live.cash.find(i => i.id === id);
-    if(!item) return;
-    document.getElementById('mCashTitle').innerText = '자산 항목 수정';
-    document.getElementById('fCashName').value = item.name || '';
-    document.getElementById('fCashAmt').value = item.amount || '';
-    document.getElementById('fCashMemo').value = item.memo || '';
-    document.getElementById('btnCashDel').style.display = 'block';
-    document.getElementById('modalCash').style.display = 'flex';
+    const name = document.getElementById('fCashName').value.trim();
+    const amount = parseFloat(document.getElementById('fCashAmt').value || '0') || 0;
+
+    if(!name) { alert('항목명을 입력해주세요'); return; }
+
+    const arr = [...(live.cash || [])];
+    const newItem = { id: S.editId || 'cash' + Date.now(), name, amount, memo };
+
+    if (S.editId) {
+      const idx = arr.findIndex(i => i.id === S.editId);
+      if(idx >= 0) arr[idx] = newItem;
+    } else {
+      arr.push(newItem);
+    }
+    fbSave('cash', arr);
   }
+  
+  closeForm();
 }
 
-function closeModal() {
-  document.getElementById('modalStock').style.display = 'none';
-  document.getElementById('modalCash').style.display = 'none';
-}
-
-function saveStock() {
-  const ticker = document.getElementById('fTicker').value.trim();
-  const name = document.getElementById('fStockName').value.trim();
-  const qty = parseFloat(document.getElementById('fQty').value || '0') || 0;
-  const avgPrice = parseFloat(document.getElementById('fAvgPrice').value || '0') || 0;
-  const memo = document.getElementById('fStockMemo').value.trim();
-
-  if(!ticker || !name) { alert('티커와 자산명을 입력해주세요'); return; }
-
-  const arr = [...(live.stock || [])];
-  const newItem = { id: S.editId || 'stock' + Date.now(), ticker, name, qty, avgPrice, memo };
-
-  if(S.editId) {
-    const idx = arr.findIndex(i => i.id === S.editId);
-    if(idx >= 0) arr[idx] = newItem;
-  } else {
-    arr.push(newItem);
-  }
-
-  fbSave('stock', arr);
-  closeModal();
-}
-
-function delStock() {
+// 원본 통합 삭제 로직 복원 및 바인딩 완료
+function handleDelete() {
   if(!confirm('삭제할까요?')) return;
-  fbSave('stock', (live.stock || []).filter(i => i.id !== S.editId));
-  closeModal();
-}
-
-function saveCash() {
-  const name = document.getElementById('fCashName').value.trim();
-  const amount = parseFloat(document.getElementById('fCashAmt').value || '0') || 0;
-  const memo = document.getElementById('fCashMemo').value.trim();
-
-  if(!name) { alert('항목명을 입력해주세요'); return; }
-
-  const arr = [...(live.cash || [])];
-  const newItem = { id: S.editId || 'cash' + Date.now(), name, amount, memo };
-
-  if(S.editId) {
-    const idx = arr.findIndex(i => i.id === S.editId);
-    if(idx >= 0) arr[idx] = newItem;
+  if (S.mode === 'stock') {
+    fbSave('stock', (live.stock || []).filter(i => i.id !== S.editId));
   } else {
-    arr.push(newItem);
+    fbSave('cash', (live.cash || []).filter(i => i.id !== S.editId));
   }
-
-  fbSave('cash', arr);
-  closeModal();
-}
-
-function delCash() {
-  if(!confirm('삭제할까요?')) return;
-  fbSave('cash', (live.cash || []).filter(i => i.id !== S.editId));
-  closeModal();
+  closeForm();
 }
 
 function setRoom() {
