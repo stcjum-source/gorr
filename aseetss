@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="자산관리">
+<title>자산 관리</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#fff;--bg2:#f5f5f5;--bg3:#e8e8e8;
+  --text:#1a1a1a;--text2:#666;--text3:#aaa;
+  --border:#e0e0e0;--border2:#ccc;
+  --r:12px;--rs:8px;
+  --green-bg:#eaf3de;--green:#3b6d11;
+  --red-bg:#fcebeb;--red:#c0392b;
+  --acc:#2d2d2d;
+  --blue:#1a56b0;--blue-bg:#e8f0fe;
+  --gold:#b8860b;--gold-bg:#fef9e7;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1c1c1e;--bg2:#2c2c2e;--bg3:#3a3a3c;
+  --text:#f0f0f0;--text2:#aaa;--text3:#555;
+  --border:#3a3a3c;--border2:#555;
+  --green-bg:#1a3a12;--green:#8fd46a;
+  --red-bg:#3b1a1a;--red:#e08080;
+  --acc:#e8e8e8;
+  --blue:#5b9bd5;--blue-bg:#1a2a3a;
+  --gold:#d4a017;--gold-bg:#2a2510;
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif;font-size:14px;color:var(--text);background:var(--bg2);min-height:100vh;padding-bottom:env(safe-area-inset-bottom)}
+#app{max-width:430px;margin:0 auto;min-height:100vh}
+.hdr{background:var(--bg);border-bottom:1px solid var(--border);padding:12px 16px 0;position:sticky;top:0;z-index:100;box-shadow:0 1px 6px rgba(0,0,0,.06)}
+.hdr-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.hdr h1{font-size:14px;font-weight:600;color:var(--text2)}
+.hdr-right{display:flex;align-items:center;gap:8px}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
+.sync-dot.off{background:var(--red)}
+.refresh-btn{background:none;border:1px solid var(--border2);border-radius:var(--rs);padding:4px 10px;font-size:11px;color:var(--text2);cursor:pointer;font-family:inherit}
+.total-area{text-align:center;padding:6px 16px 12px}
+.total-label{font-size:11px;color:var(--text2);margin-bottom:4px}
+.total-val{font-size:28px;font-weight:700;letter-spacing:-1px;color:var(--text)}
+.total-change{font-size:12px;margin-top:3px}
+.total-change.up{color:var(--red)}
+.total-change.dn{color:var(--blue)}
+.nav-tabs{display:flex;border-top:1px solid var(--border)}
+.nav-tab{flex:1;padding:8px 4px;font-size:12px;color:var(--text2);cursor:pointer;text-align:center;border-bottom:2px solid transparent;font-family:inherit;background:none;border-top:none;border-left:none;border-right:none}
+.nav-tab.on{color:var(--acc);border-bottom:2px solid var(--acc);font-weight:600}
+.sec{padding:12px 14px 40px}
+.mini-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px}
+.mc{background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:8px 6px;text-align:center}
+.mc-label{font-size:10px;color:var(--text2);margin-bottom:3px}
+.mc-val{font-size:13px;font-weight:600}
+.mc-val.crypto{color:var(--gold)}
+.mc-val.stock{color:var(--blue)}
+.mc-val.etf{color:var(--green)}
+.mc-val.cash{color:var(--text)}
+.asset-section{margin-bottom:14px}
+.sec-title{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;padding:0 2px}
+.asset-list{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.asset-item{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border)}
+.asset-item:last-child{border-bottom:none}
+.ai-left{flex:1;min-width:0}
+.ai-name{font-size:13px;font-weight:500;color:var(--text)}
+.ai-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.ai-right{text-align:right;flex-shrink:0}
+.ai-val{font-size:13px;font-weight:600}
+.ai-price{font-size:11px;color:var(--text3);margin-top:2px}
+.loading-price{color:var(--text3);font-size:13px}
+.form-box{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px}
+.form-box.edit{border-color:var(--acc);border-width:2px}
+.fr{margin-bottom:9px}
+.fr label{display:block;font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:500}
+.fr input,.fr select{width:100%;padding:9px 11px;border:1px solid var(--border2);border-radius:var(--rs);font-size:14px;background:var(--bg);color:var(--text);font-family:inherit;-webkit-appearance:none;appearance:none;outline:none}
+.fr input:focus,.fr select:focus{border-color:var(--acc)}
+.fa{display:flex;gap:7px;margin-top:10px}
+.btn-s{flex:1;padding:10px;background:var(--acc);color:var(--bg);border:none;border-radius:var(--rs);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-c{padding:10px 14px;background:transparent;border:1px solid var(--border2);border-radius:var(--rs);font-size:13px;cursor:pointer;color:var(--text2);font-family:inherit}
+.add-btn{background:var(--bg);border:1px solid var(--border2);border-radius:var(--rs);padding:5px 12px;font-size:12px;color:var(--text);cursor:pointer;font-family:inherit}
+.sub-tabs{display:flex;gap:6px;margin-bottom:12px}
+.sub-tab{flex:1;padding:7px;border:1px solid var(--border2);border-radius:var(--rs);font-size:12px;background:var(--bg);cursor:pointer;color:var(--text2);font-family:inherit;text-align:center}
+.sub-tab.on{background:var(--acc);color:var(--bg);border-color:var(--acc);font-weight:500}
+.manage-item{display:flex;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border);gap:8px}
+.manage-item:last-child{border-bottom:none}
+.mi-info{flex:1;min-width:0}
+.mi-name{font-size:13px;font-weight:500}
+.mi-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.mi-btns{display:flex;gap:4px;flex-shrink:0}
+.mi-btn{background:none;border:1px solid var(--border);border-radius:var(--rs);color:var(--text2);cursor:pointer;font-size:12px;padding:4px 8px;font-family:inherit}
+.mi-btn.d{color:var(--red);border-color:transparent}
+.hist-chart{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:12px;overflow:hidden}
+.record-btn{width:100%;padding:12px;background:var(--acc);color:var(--bg);border:none;border-radius:var(--r);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:12px}
+.hist-list{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.hist-item{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;border-bottom:1px solid var(--border);font-size:13px}
+.hist-item:last-child{border-bottom:none}
+.hist-date{color:var(--text2);font-size:12px}
+.hist-total{font-weight:600}
+.hist-change{font-size:11px}
+.hist-change.up{color:var(--red)}
+.hist-change.dn{color:var(--blue)}
+.empty{text-align:center;padding:28px 16px;color:var(--text3);font-size:13px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r)}
+#roomSetup{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:999;align-items:center;justify-content:center;padding:20px}
+.setup-box{background:var(--bg);border-radius:16px;padding:24px;width:100%;max-width:360px}
+.setup-box h2{font-size:18px;font-weight:700;margin-bottom:8px}
+.setup-box p{font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.7}
+.setup-input{width:100%;padding:13px;border:1.5px solid var(--border2);border-radius:10px;font-size:16px;font-family:inherit;background:var(--bg);color:var(--text);outline:none;margin-bottom:12px;text-align:center;letter-spacing:2px}
+.setup-btn{width:100%;padding:14px;background:var(--acc);color:var(--bg);border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="roomSetup">
+    <div class="setup-box">
+      <div style="font-size:28px;margin-bottom:8px">📈</div>
+      <h2>공유 코드 설정</h2>
+      <p>가계부와 같은 코드를 입력하면<br>같은 Firebase에 저장돼요.<br>다른 코드를 입력하면 별도로 관리돼요.</p>
+      <input type="text" class="setup-input" id="roomCodeInput" placeholder="예: knky2026" maxlength="20">
+      <button class="setup-btn" onclick="setRoom()">완료</button>
+      <p style="font-size:11px;color:var(--text3);text-align:center;margin-top:12px">가영이도 같은 코드 입력하면 돼요</p>
+    </div>
+  </div>
+  <div id="mainApp" style="display:none">
+    <div class="hdr">
+      <div class="hdr-top">
+        <h1>📈 자산 관리</h1>
+        <div class="hdr-right">
+          <button onclick="resetRoom()" style="background:none;border:none;font-size:11px;color:var(--text3);cursor:pointer;padding:4px 6px;font-family:inherit">코드 재설정</button>
+          <span id="lastUpdate" style="font-size:10px;color:var(--text3)"></span>
+          <button class="refresh-btn" onclick="updatePrices()">🔄 업데이트</button>
+          <span id="dot" class="sync-dot off"></span>
+        </div>
+      </div>
+      <div class="total-area">
+        <div class="total-label">총 자산</div>
+        <div class="total-val" id="totalVal">—</div>
+        <div class="total-change" id="totalChange"></div>
+      </div>
+      <div class="nav-tabs">
+        <button class="nav-tab on" onclick="setV('dashboard')">현황</button>
+        <button class="nav-tab" onclick="setV('history')">기록</button>
+        <button class="nav-tab" onclick="setV('manage')">관리</button>
+        <button class="nav-tab" onclick="setV('total')">총자산</button>
+      </div>
+    </div>
+    <div class="sec" id="content"></div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script>
+const SEED_CRYPTO=[{"id":"c1","name":"비트코인","market":"KRW-BTC","qty":0.658706},{"id":"c2","name":"이더리움","market":"KRW-ETH","qty":22.61},{"id":"c3","name":"솔라나","market":"KRW-SOL","qty":72.01},{"id":"c4","name":"리플","market":"KRW-XRP","qty":2612.42},{"id":"c5","name":"도지코인","market":"KRW-DOGE","qty":4437.54},{"id":"c6","name":"에이다","market":"KRW-ADA","qty":5318},{"id":"c7","name":"수이","market":"KRW-SUI","qty":346.46},{"id":"c8","name":"트럼프코인","market":"KRW-TRUMP","qty":145.28},{"id":"c9","name":"랜더토큰","market":"KRW-RENDER","qty":253.837},{"id":"c10","name":"세이","market":"KRW-SEI","qty":42465.19},{"id":"c11","name":"샌드박스","market":"KRW-SAND","qty":2389},{"id":"c12","name":"비체인","market":"KRW-VET","qty":94457.76},{"id":"c13","name":"폴리곤","market":"KRW-POL","qty":1001.01}];
+const SEED_STOCKS=[{"id":"s1","name":"팔란티어","ticker":"PLTR","qty":80,"currency":"USD"},{"id":"s2","name":"테슬라","ticker":"TSLA","qty":22.34,"currency":"USD"},{"id":"s3","name":"TSLL","ticker":"TSLL","qty":692.144,"currency":"USD"},{"id":"s4","name":"써클","ticker":"CRCL","qty":15.41,"currency":"USD"},{"id":"s5","name":"비트마인","ticker":"BMNR","qty":153.92,"currency":"USD"},{"id":"s6","name":"리얼티인컴","ticker":"O","qty":0,"currency":"USD"},{"id":"s7","name":"TSL3(런던)","ticker":"3TSL.L","qty":65,"currency":"USD","manual":true}];
+const SEED_ETF=[{"id":"e1","name":"TIGER 차이나전기차","ticker":"371460.KS","qty":775,"currency":"KRW"},{"id":"e2","name":"KOACT 코스닥액티브","ticker":"243890.KS","qty":473,"currency":"KRW"},{"id":"e3","name":"TIGER 코리아AI전력기기TOP3","ticker":"494640.KS","qty":186,"currency":"KRW"},{"id":"e4","name":"SOL 조선TOP3플러스","ticker":"466920.KS","qty":1,"currency":"KRW"},{"id":"e5","name":"1Q 미국우주항공테크","ticker":"469130.KS","qty":455,"currency":"KRW"}];
+const SEED_CASH=[{"id":"cash1","name":"현금","amount":46370000},{"id":"cash2","name":"주택청약","amount":40240000},{"id":"cash3","name":"기타","amount":7100000}];
+const SEED_HISTORY=[{"date":"2025-08-12","crypto":251607357,"stocks":60401070,"etf":0,"cash":0,"total":312008428},{"date":"2025-08-13","crypto":258317643,"stocks":60474277,"etf":0,"cash":0,"total":318791920},{"date":"2025-08-14","crypto":268483410,"stocks":60909785,"etf":0,"cash":0,"total":329393195},{"date":"2025-08-15","crypto":267145859,"stocks":59664286,"etf":0,"cash":0,"total":326810145},{"date":"2025-08-17","crypto":259556955,"stocks":59070837,"etf":0,"cash":0,"total":318627792},{"date":"2025-08-18","crypto":259556955,"stocks":59070837,"etf":0,"cash":0,"total":318627792},{"date":"2025-08-19","crypto":250984792,"stocks":58919780,"etf":0,"cash":0,"total":309904572},{"date":"2025-08-20","crypto":250984792,"stocks":57961933,"etf":0,"cash":0,"total":308946725},{"date":"2025-08-21","crypto":253307304,"stocks":55175994,"etf":0,"cash":0,"total":308483297},{"date":"2025-08-22","crypto":253307304,"stocks":56384386,"etf":0,"cash":0,"total":309691690},{"date":"2025-08-23","crypto":266326537,"stocks":57635949,"etf":0,"cash":0,"total":323962487},{"date":"2025-08-24","crypto":268967227,"stocks":57857805,"etf":0,"cash":0,"total":326825032},{"date":"2025-08-25","crypto":260838013,"stocks":57857805,"etf":0,"cash":0,"total":318695819},{"date":"2025-08-26","crypto":260838013,"stocks":58434369,"etf":0,"cash":0,"total":319272382},{"date":"2025-08-27","crypto":260838013,"stocks":59472463,"etf":0,"cash":0,"total":320310477},{"date":"2025-08-28","crypto":260838013,"stocks":59955101,"etf":0,"cash":0,"total":320793114},{"date":"2025-08-29","crypto":260838013,"stocks":57966633,"etf":0,"cash":0,"total":318804647},{"date":"2025-08-30","crypto":252449546,"stocks":57966633,"etf":0,"cash":0,"total":310416180},{"date":"2025-08-31","crypto":252070326,"stocks":57713596,"etf":0,"cash":0,"total":309783922},{"date":"2025-09-01","crypto":254756311,"stocks":57713596,"etf":0,"cash":0,"total":312469907},{"date":"2025-09-02","crypto":250734987,"stocks":57839854,"etf":0,"cash":0,"total":308574842},{"date":"2025-09-03","crypto":250577825,"stocks":57123789,"etf":0,"cash":0,"total":307701614},{"date":"2025-09-04","crypto":257121732,"stocks":58931335,"etf":0,"cash":0,"total":316053067},{"date":"2025-09-05","crypto":251236476,"stocks":57679800,"etf":0,"cash":0,"total":308916276},{"date":"2025-09-06","crypto":253171801,"stocks":58901395,"etf":0,"cash":0,"total":312073196},{"date":"2025-09-07","crypto":251738497,"stocks":59410175,"etf":0,"cash":0,"total":311148673},{"date":"2025-09-08","crypto":251738497,"stocks":59410175,"etf":0,"cash":0,"total":311148673},{"date":"2025-09-09","crypto":256768869,"stocks":59788284,"etf":0,"cash":0,"total":316557153},{"date":"2025-09-10","crypto":253842470,"stocks":59768519,"etf":0,"cash":0,"total":313610989},{"date":"2025-09-11","crypto":260611787,"stocks":61673809,"etf":0,"cash":0,"total":322285595},{"date":"2025-09-12","crypto":261992745,"stocks":62486633,"etf":0,"cash":0,"total":324479379},{"date":"2025-09-13","crypto":272219632,"stocks":69377898,"etf":0,"cash":0,"total":341597530},{"date":"2025-09-14","crypto":272219632,"stocks":69377989,"etf":0,"cash":0,"total":341597621},{"date":"2025-09-15","crypto":269649865,"stocks":69377989,"etf":0,"cash":0,"total":339027853},{"date":"2025-09-16","crypto":264722907,"stocks":72296098,"etf":0,"cash":0,"total":337019005},{"date":"2025-09-17","crypto":264722907,"stocks":71990765,"etf":0,"cash":0,"total":336713672},{"date":"2025-09-18","crypto":254339847,"stocks":72439684,"etf":0,"cash":0,"total":326779531},{"date":"2025-09-19","crypto":261305527,"stocks":74627113,"etf":0,"cash":0,"total":335932640},{"date":"2025-09-20","crypto":256785103,"stocks":76228331,"etf":0,"cash":0,"total":333013435},{"date":"2025-09-21","crypto":257240444,"stocks":76380155,"etf":0,"cash":0,"total":333620599},{"date":"2025-09-22","crypto":255493998,"stocks":76380155,"etf":0,"cash":0,"total":331874153},{"date":"2025-09-23","crypto":244000000,"stocks":77800000,"etf":0,"cash":0,"total":321800000},{"date":"2025-09-25","crypto":244947716,"stocks":77948444,"etf":0,"cash":0,"total":322896160},{"date":"2025-09-26","crypto":238293340,"stocks":77144442,"etf":0,"cash":0,"total":315437782},{"date":"2025-09-28","crypto":238256606,"stocks":77971183,"etf":0,"cash":0,"total":316227790},{"date":"2025-09-29","crypto":238194224,"stocks":77971183,"etf":0,"cash":0,"total":316165407},{"date":"2025-09-30","crypto":244000000,"stocks":78263012,"etf":0,"cash":0,"total":322263012},{"date":"2025-10-01","crypto":242226798,"stocks":78006793,"etf":0,"cash":0,"total":320233591},{"date":"2025-10-02","crypto":252834550,"stocks":81071282,"etf":0,"cash":0,"total":333905832},{"date":"2025-10-04","crypto":261589319,"stocks":77992066,"etf":0,"cash":0,"total":339581385},{"date":"2025-10-05","crypto":260872467,"stocks":76748829,"etf":0,"cash":0,"total":337621296},{"date":"2025-10-07","crypto":269793718,"stocks":79952830,"etf":0,"cash":0,"total":349746548},{"date":"2025-10-08","crypto":273946503,"stocks":79715014,"etf":0,"total":353661517}];
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAs7K-gXg_l7F-nQZ-G8vGj2R69-e08080",
+  authDomain: "gorr-66f73.firebaseapp.com",
+  databaseURL: "https://gorr-66f73-default-rtdb.firebaseio.com",
+  projectId: "gorr-66f73",
+  storageBucket: "gorr-66f73.firebasestorage.app",
+  messagingSenderId: "530517431482",
+  appId: "1:530517431482:web:34828eca983f277baf5e83"
+};
+
+let db=null, ROOM=localStorage.getItem('asset_room'), connected=false;
+let live={crypto:[...SEED_CRYPTO],stocks:[...SEED_STOCKS],etf:[...SEED_ETF],cash:[...SEED_CASH],history:[...SEED_HISTORY]};
+let prices={}, exRate=1517;
+let S={view:'dashboard',manageType:'crypto',showForm:false,editId:null,loading:false,chartPeriod:'1M'};
+
+function fmtW(n){return Math.round(Math.abs(n)).toLocaleString('ko-KR')+'원';}
+function fmtS(n){
+  const a=Math.abs(Math.round(n)),sg=n<0?'-':'';
+  if(a>=100000000)return sg+(a/100000000).toFixed(1)+'억';
+  if(a>=10000)return sg+(a/10000).toFixed(0)+'만';
+  return sg+a.toLocaleString('ko-KR');
+}
+function fmtWShort(n){
+  const a=Math.abs(Math.round(n)),sg=n<0?'-':'';
+  if(a>=100000000)return sg+(a/100000000).toFixed(2)+'억원';
+  return sg+(a/10000).toLocaleString('ko-KR', {maximumFractionDigits:0})+'만원';
+}
+
+function calcTotals(){
+  let cSum=0, sSum=0, eSum=0, cashSum=0;
+  let hasPrice=false;
+
+  (live.crypto||[]).forEach(i=>{
+    const p=prices[i.market];
+    if(p!==undefined){ cSum+=i.qty*p; hasPrice=true; }
+  });
+  (live.stocks||[]).forEach(i=>{
+    const p=prices[i.ticker];
+    if(p!==undefined){
+      const val=i.qty*p;
+      if(i.currency==='USD') sSum+=val*exRate;
+      else sSum+=val;
+      hasPrice=true;
+    }
+  });
+  (live.etf||[]).forEach(i=>{
+    const p=prices[i.ticker];
+    if(p!==undefined){ eSum+=i.qty*p; hasPrice=true; }
+  });
+  (live.cash||[]).forEach(i=>{ cashSum+=i.amount; });
+
+  return { crypto:cSum, stocks:sSum, etf:eSum, cash:cashSum, total:cSum+sSum+eSum+cashSum, hasPrice };
+}
+
+function setV(v){
+  S.view=v;
+  if(v!=='manage'){ S.showForm=false; S.editId=null; }
+  const tabs=document.querySelectorAll('.nav-tab');
+  tabs[0].classList.toggle('on', v==='dashboard');
+  tabs[1].classList.toggle('on', v==='history');
+  tabs[2].classList.toggle('on', v==='manage');
+  tabs[3].classList.toggle('on', v==='total');
+  render();
+}
+
+function setMType(t){
+  S.manageType=t; S.showForm=false; S.editId=null;
+  render();
+}
+
+// ── 시세 가져오기 (CORS 우회 반영 완료) ──────────────────────────
+async function updatePrices(){
+  if(S.loading) return;
+  S.loading=true;
+  const lu=document.getElementById('lastUpdate');
+  if(lu) lu.textContent='불러오는 중...';
+
+  let coinOk=false, fxOk=false, stockOk=false;
+
+  // 1. 코인 가격 조회 (CORS 우회 적용)
+  const coins=live.crypto||[];
+  if(coins.length){
+    try{
+      const markets=coins.map(c=>c.market).join(',');
+      const targetUrl = `https://api.upbit.com/v1/ticker?markets=${markets}`;
+      const res=await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`);
+      const json=await res.json();
+      const arr=JSON.parse(json.contents);
+      
+      if(Array.isArray(arr)){
+        arr.forEach(t=>{ prices[t.market]=t.trade_price; });
+        coinOk=true;
+      }
+    }catch(e){console.error('Coin fetch failed:',e);}
+  }else{coinOk=true;}
+
+  // 2. 환율 가격 조회
+  try{
+    const res=await fetch('https://open.er-api.com/v6/latest/USD');
+    const data=await res.json();
+    if(data&&data.rates&&data.rates.KRW){
+      exRate=data.rates.KRW;
+      fxOk=true;
+    }
+  }catch(e){console.error('FX fetch failed:',e);}
+
+  // 3. 국내/해외 주식 및 ETF 가격 조회 (CORS 우회 적용)
+  const allTickers=[];
+  (live.stocks||[]).forEach(s=>{ if(!s.manual) allTickers.push(s.ticker); });
+  (live.etf||[]).forEach(e=>{ allTickers.push(e.ticker); });
+
+  if(allTickers.length){
+    try{
+      const targetStockUrl = 'https://query1.finance.yahoo.com/v7/finance/quote?symbols=' + allTickers.join(',');
+      const res=await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(targetStockUrl)}`);
+      const json=await res.json();
+      const data=JSON.parse(json.contents);
+      if(data&&data.quoteResponse&&data.quoteResponse.result){
+        data.quoteResponse.result.forEach(q=>{
+          if(q&&q.symbol&&q.regularMarketPrice){
+            prices[q.symbol]=q.regularMarketPrice;
+          }
+        });
+        stockOk=true;
+      }
+    }catch(err2){console.error('Stock fetch failed:',err2);}
+  }else{stockOk=true;}
+
+  (live.stocks||[]).forEach(s=>{
+    if(s.manual && prices[s.ticker]===undefined) prices[s.ticker]=10000; 
+  });
+
+  const now=new Date();
+  const timeStr=`${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const statusParts=[];
+  if(coinOk) statusParts.push('코인✓'); else statusParts.push('코인✗');
+  if(fxOk) statusParts.push('환율✓');
+  if(allTickers.length){
+    if(stockOk) statusParts.push('주식✓');
+    else statusParts.push('주식✗');
+  }
+
+  if(db&&ROOM) db.ref(`assets/${ROOM}/prices`).set({...prices,exRate,updatedAt:now.toISOString()});
+
+  const t2=calcTotals();
+  if(t2.hasPrice){
+    const dateStr=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    const histArr=[...(live.history||[])];
+    const existIdx=histArr.findIndex(h=>h.date===dateStr);
+    const entry={date:dateStr,total:Math.round(t2.total),crypto:Math.round(t2.crypto),stocks:Math.round(t2.stocks),etf:Math.round(t2.etf),cash:Math.round(t2.cash)};
+    if(existIdx>=0) histArr[existIdx]=entry;
+    else histArr.push(entry);
+    histArr.sort((a,b)=>a.date>b.date?1:-1);
+    fbSave('history',histArr);
+    if(lu) lu.textContent=`${timeStr} ${statusParts.join(' ')} · 기록완료`;
+  }else{
+    if(lu) lu.textContent=`${timeStr} ${statusParts.join(' ')}`;
+  }
+  S.loading=false;
+  render();
+}
+
+function render(){
+  const info=calcTotals();
+  document.getElementById('totalVal').textContent=fmtW(info.total);
+  const tc=document.getElementById('totalChange');
+  const hist=live.history||[];
+  if(hist.length>=2){
+    const last=hist[hist.length-1];
+    const prev=hist[hist.length-2];
+    const diff=last.total-prev.total;
+    const pct=((diff/prev.total)*100).toFixed(1);
+    tc.className=`total-change ${diff>=0?'up':'dn'}`;
+    tc.textContent=`어제보다 ${diff>=0?'▲':'▼'} ${fmtW(Math.abs(diff))} (${diff>=0?'+':''}${pct}%)`;
+  }else{
+    tc.textContent='';
+  }
+
+  const cont=document.getElementById('content');
+  if(!cont) return;
+
+  if(S.view==='dashboard'){
+    let h=`<div class="mini-cards">
+      <div class="mc"><div class="mc-label">코인</div><div class="mc-val crypto">${fmtS(info.crypto)}</div></div>
+      <div class="mc"><div class="mc-label">주식</div><div class="mc-val stock">${fmtS(info.stocks)}</div></div>
+      <div class="mc"><div class="mc-label">ETF</div><div class="mc-val etf">${fmtS(info.etf)}</div></div>
+      <div class="mc"><div class="mc-label">현금성</div><div class="mc-val cash">${fmtS(info.cash)}</div></div>
+    </div>`;
+
+    h+=`<div class="asset-section"><div class="sec-title"><span>🪙 가상자산</span><span>${fmtW(info.crypto)}</span></div><div class="asset-list">`;
+    if(!live.crypto||!live.crypto.length) h+=`<div class="empty">등록된 가상자산이 없습니다.</div>`;
+    else{
+      live.crypto.forEach(item=>{
+        const p=prices[item.market];
+        const v=p!==undefined?item.qty*p:0;
+        h+=`<div class="asset-item">
+          <div class="ai-left"><div class="ai-name">${item.name}</div><div class="ai-sub">${item.qty.toLocaleString(undefined,{maximumFractionDigits:4})}개</div></div>
+          <div class="ai-right"><div class="ai-val">${p!==undefined?fmtW(v):'<span class="loading-price">—</span>'}</div><div class="ai-price">${p!==undefined?p.toLocaleString()+'원':''}</div></div>
+        </div>`;
+      });
+    }
+    h+=`</div></div>`;
+
+    h+=`<div class="asset-section"><div class="sec-title"><span>🇺🇸 해외/국내 주식</span><span>${fmtW(info.stocks)}</span></div><div class="asset-list">`;
+    if(!live.stocks||!live.stocks.length) h+=`<div class="empty">등록된 주식이 없습니다.</div>`;
+    else{
+      live.stocks.forEach(item=>{
+        const p=prices[item.ticker];
+        let v=0; if(p!==undefined){ v=item.currency==='USD'?item.qty*p*exRate:item.qty*p; }
+        h+=`<div class="asset-item">
+          <div class="ai-left"><div class="ai-name">${item.name}</div><div class="ai-sub">${item.qty}주 · ${item.ticker}</div></div>
+          <div class="ai-right"><div class="ai-val">${p!==undefined?fmtW(v):'<span class="loading-price">—</span>'}</div><div class="ai-price">${p!==undefined?(item.currency==='USD'?'$'+p.toLocaleString():p.toLocaleString()+'원'):''}</div></div>
+        </div>`;
+      });
+    }
+    h+=`</div></div>`;
+
+    h+=`<div class="asset-section"><div class="sec-title"><span>📊 상장지수펀드 (ETF)</span><span>${fmtW(info.etf)}</span></div><div class="asset-list">`;
+    if(!live.etf||!live.etf.length) h+=`<div class="empty">등록된 ETF가 없습니다.</div>`;
+    else{
+      live.etf.forEach(item=>{
+        const p=prices[item.ticker];
+        const v=p!==undefined?item.qty*p:0;
+        h+=`<div class="asset-item">
+          <div class="ai-left"><div class="ai-name">${item.name}</div><div class="ai-sub">${item.qty}주 · ${item.ticker}</div></div>
+          <div class="ai-right"><div class="ai-val">${p!==undefined?fmtW(v):'<span class="loading-price">—</span>'}</div><div class="ai-price">${p!==undefined?p.toLocaleString()+'원':''}</div></div>
+        </div>`;
+      });
+    }
+    h+=`</div></div>`;
+
+    h+=`<div class="asset-section"><div class="sec-title"><span>💵 현금 및 안전자산</span><span>${fmtW(info.cash)}</span></div><div class="asset-list">`;
+    if(!live.cash||!live.cash.length) h+=`<div class="empty">등록된 자산이 없습니다.</div>`;
+    else{
+      live.cash.forEach(item=>{
+        h+=`<div class="asset-item">
+          <div class="ai-left"><div class="ai-name">${item.name}</div><div class="ai-sub">${item.memo||'안전자산'}</div></div>
+          <div class="ai-right"><div class="ai-val">${fmtW(item.amount)}</div></div>
+        </div>`;
+      });
+    }
+    h+=`</div></div>`;
+
+    cont.innerHTML=h;
+  }
+  else if(S.view==='history'){
+    let h=`<div style="display:flex;gap:6px;margin-bottom:12px">
+      <button class="sub-tab ${S.chartPeriod==='1W'?'on':''}" onclick="S.chartPeriod='1W';render();">1주일</button>
+      <button class="sub-tab ${S.chartPeriod==='1M'?'on':''}" onclick="S.chartPeriod='1M';render();">1개월</button>
+      <button class="sub-tab ${S.chartPeriod==='3M'?'on':''}" onclick="S.chartPeriod='3M';render();">3개월</button>
+      <button class="sub-tab ${S.chartPeriod==='ALL'?'on':''}" onclick="S.chartPeriod='ALL';render();">전체</button>
+    </div>`;
+    h+=`<div class="hist-chart">
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">📈 총자산 추이 변동</div>`;
+    h+=renderChart(hist, S.chartPeriod);
+    h+=`</div><button class="record-btn" onclick="updatePrices()">📍 현재 상태 즉시 동기화 기록</button>`;
+
+    const recent=[...hist].reverse().slice(0,40);
+    h+=`<div style="font-size:12px;font-weight:600;color:var(--text2);margin:14px 0 6px;padding:0 2px">기록 내역</div>`;
+    h+=`<div class="hist-list">`;
+    recent.forEach((item,i)=>{
+      const prev=recent[i+1];
+      const diff=prev?item.total-prev.total:0;
+      const pct=prev&&prev.total?((diff/prev.total)*100).toFixed(1):'';
+      h+=`<div class="hist-item">
+        <div>
+          <div class="hist-date">${item.date}</div>
+          ${prev?`<div class="hist-change ${diff>=0?'up':'dn'}">${diff>=0?'▲':'▼'} ${fmtWShort(Math.abs(diff))} (${pct}%)</div>`:'<div class="hist-change">—</div>'}
+        </div>
+        <div style="text-align:right">
+          <div class="hist-total">${fmtWShort(item.total)}</div>
+          <div style="font-size:10px;color:var(--text3)">코인 ${fmtS(item.crypto)} / 주식 ${fmtS(item.stocks+item.etf)}</div>
+        </div>
+      </div>`;
+    });
+    h+=`</div>`;
+    cont.innerHTML=h;
+  }
+  else if(S.view==='manage'){
+    let h=`<div class="sub-tabs">
+      <button class="sub-tab ${S.manageType==='crypto'?'on':''}" onclick="setMType('crypto')">코인</button>
+      <button class="sub-tab ${S.manageType==='stocks'?'on':''}" onclick="setMType('stocks')">주식</button>
+      <button class="sub-tab ${S.manageType==='etf'?'on':''}" onclick="setMType('etf')">ETF</button>
+      <button class="sub-tab ${S.manageType==='cash'?'on':''}" onclick="setMType('cash')">현금성</button>
+    </div>`;
+
+    if(!S.showForm) h+=`<button class="record-btn" onclick="openForm()">+ 새로운 항목 추가</button>`;
+    else h+=renderForm();
+
+    h+=`<div class="asset-list">`;
+    const arr=live[S.manageType]||[];
+    if(!arr.length){
+      h+=`<div class="empty">등록된 항목이 없습니다. 기입해 주세요.</div>`;
+    }else{
+      arr.forEach(item=>{
+        let subText='', amtText='';
+        if(S.manageType==='crypto'){ subText=item.market; amtText=`${item.qty.toLocaleString()} 개`;}
+        else if(S.manageType==='stocks'){ subText=`${item.ticker} (${item.currency})`; amtText=`${item.qty} 주`;}
+        else if(S.manageType==='etf'){ subText=item.ticker; amtText=`${item.qty} 주`;}
+        else if(S.manageType==='cash'){ subText=item.memo||'일반 계좌 자산'; amtText=fmtW(item.amount);}
+
+        h+=`<div class="manage-item">
+          <div class="mi-info"><div class="mi-name">${item.name}</div><div class="mi-sub">${subText} · ${amtText}</div></div>
+          <div class="mi-btns">
+            <button class="mi-btn" onclick="openForm('${item.id}')">수정</button>
+            <button class="mi-btn d" onclick="delItem('${item.id}')">삭제</button>
+          </div>
+        </div>`;
+      });
+    }
+    h+=`</div>`;
+    cont.innerHTML=h;
+  }
+  else if(S.view==='total'){
+    const cPct=info.total?((info.crypto/info.total)*100).toFixed(1):0;
+    const sPct=info.total?((info.stocks/info.total)*100).toFixed(1):0;
+    const ePct=info.total?((info.etf/info.total)*100).toFixed(1):0;
+    const cashPct=info.total?((info.cash/info.total)*100).toFixed(1):0;
+
+    let h=`<div class="asset-section">
+      <div class="sec-title">📊 자산 포트폴리오 비율</div>
+      <div class="asset-list" style="padding:16px; background:var(--bg)">
+        <div style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+            <span>🪙 가상자산 (${cPct}%)</span><strong>${fmtW(info.crypto)}</strong>
+          </div>
+          <div style="height:8px;background:var(--bg2);border-radius:4px;overflow:hidden"><div style="width:${cPct}%;height:100%;background:var(--gold)"></div></div>
+        </div>
+        <div style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+            <span>🇺🇸 주식자산 (${sPct}%)</span><strong>${fmtW(info.stocks)}</strong>
+          </div>
+          <div style="height:8px;background:var(--bg2);border-radius:4px;overflow:hidden"><div style="width:${sPct}%;height:100%;background:var(--blue)"></div></div>
+        </div>
+        <div style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+            <span>📊 ETF 상품 (${ePct}%)</span><strong>${fmtW(info.etf)}</strong>
+          </div>
+          <div style="height:8px;background:var(--bg2);border-radius:4px;overflow:hidden"><div style="width:${ePct}%;height:100%;background:var(--green)"></div></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+            <span>💵 현금·안전 자산 (${cashPct}%)</span><strong>${fmtW(info.cash)}</strong>
+          </div>
+          <div style="height:8px;background:var(--bg2);border-radius:4px;overflow:hidden"><div style="width:${cashPct}%;height:100%;background:var(--text)"></div></div>
+        </div>
+      </div>
+    </div>`;
+    cont.innerHTML=h;
+  }
+}
+
+function renderChart(hist, period){
+  const now=new Date();
+  let filtered=[...hist];
+  const cutoff=new Date(now);
+
+  if(period==='1W') cutoff.setDate(cutoff.getDate()-7);
+  else if(period==='1M') cutoff.setMonth(cutoff.getMonth()-1);
+  else if(period==='3M') cutoff.setMonth(cutoff.getMonth()-3);
+
+  if(period!=='ALL'){
+    const cutStr=cutoff.toISOString().split('T')[0];
+    filtered=hist.filter(h=>h.date>=cutStr);
+  }
+
+  if(filtered.length<2) return `<div class="empty" style="border:none">차트를 그리기 위한 데이터가 부족합니다. (최소 2일 이상)</div>`;
+
+  const values=filtered.map(h=>h.total);
+  const min=Math.min(...values), max=Math.max(...values);
+  const range=max-min===0?1:max-min;
+
+  const width=360, height=140;
+  const points=[];
+  filtered.forEach((h,i)=>{
+    const x=(i/(filtered.length-1))*width;
+    const y=height-((h.total-min)/range)*height;
+    points.push(`${x},${y}`);
+  });
+
+  return `<svg viewBox="0 0 ${width} ${height}" style="width:100%;height:auto;overflow:visible">
+    <polyline points="${points.join(' ')}" fill="none" stroke="var(--blue)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+  <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-top:6px">
+    <span>${filtered[0].date}</span>
+    <span>최고: ${fmtWShort(max)} / 최저: ${fmtWShort(min)}</span>
+    <span>${filtered[filtered.length-1].date}</span>
+  </div>`;
+}
+
+function openForm(id=null){ S.showForm=true; S.editId=id; render(); }
+function closeForm(){ S.showForm=false; S.editId=null; render(); }
+
+function renderForm(){
+  const isE=!!S.editId;
+  const item=isE?(live[S.manageType]||[]).find(i=>i.id===S.editId):{};
+  let h='';
+
+  if(S.manageType==='crypto'){
+    h+=`<div class="form-box ${isE?'edit':''}">
+      <div class="fr"><label>코인 자산명</label><input id="fName" type="text" placeholder="예: 비트코인" value="${item.name||''}"></div>
+      <div class="fr"><label>업비트 마켓 코드</label><input id="fMarket" type="text" placeholder="예: KRW-BTC" value="${item.market||''}"></div>
+      <div class="fr"><label>보유 수량</label><input id="fQty" type="number" inputmode="decimal" placeholder="0.00" value="${item.qty||''}"></div>
+      <div class="fa"><button class="btn-c" onclick="closeForm()">취소</button><button class="btn-s" onclick="saveItem()">${isE?'수정완료':'추가'}</button></div>
+    </div>`;
+  }else if(S.manageType==='stocks'){
+    h+=`<div class="form-box ${isE?'edit':''}">
+      <div class="fr"><label>종목명</label><input id="fName" type="text" placeholder="예: 팔란티어" value="${item.name||''}"></div>
+      <div class="fr"><label>티커 (야후파이낸스 기준)</label><input id="fTicker" type="text" placeholder="예: PLTR" value="${item.ticker||''}"></div>
+      <div class="fr"><label>보유 수량 (주)</label><input id="fQty" type="number" inputmode="decimal" placeholder="0" value="${item.qty||''}"></div>
+      <div class="fr"><label>통화</label><select id="fCurrency"><option value="USD" ${(item.currency||'USD')==='USD'?'selected':''}>USD (미국주식)</option><option value="KRW" ${item.currency==='KRW'?'selected':''}>KRW (한국주식)</option></select></div>
+      <div class="fa"><button class="btn-c" onclick="closeForm()">취소</button><button class="btn-s" onclick="saveItem()">${isE?'수정완료':'추가'}</button></div>
+    </div>`;
+  }else if(S.manageType==='etf'){
+    h+=`<div class="form-box ${isE?'edit':''}">
+      <div class="fr"><label>ETF명</label><input id="fName" type="text" placeholder="예: TIGER 나스닥" value="${item.name||''}"></div>
+      <div class="fr"><label>티커</label><input id="fTicker" type="text" placeholder="예: 371460.KS" value="${item.ticker||''}"></div>
+      <div class="fr"><label>보유 수량 (주)</label><input id="fQty" type="number" inputmode="decimal" placeholder="0" value="${item.qty||''}"></div>
+      <div class="fa"><button class="btn-c" onclick="closeForm()">취소</button><button class="btn-s" onclick="saveItem()">${isE?'수정완료':'추가'}</button></div>
+    </div>`;
+  }else if(S.manageType==='cash'){
+    h+=`<div class="form-box ${isE?'edit':''}">
+      <div class="fr"><label>계좌 자산 항목명</label><input id="fName" type="text" placeholder="예: 주택청약" value="${item.name||''}"></div>
+      <div class="fr"><label>금액 (원)</label><input id="fCashAmt" type="number" inputmode="numeric" placeholder="0" value="${item.amount||''}"></div>
+      <div class="fr"><label>메모 (선택)</label><input id="fCashMemo" type="text" placeholder="예: 국민은행" value="${item.memo||''}"></div>
+      <div class="fa"><button class="btn-c" onclick="closeForm()">취소</button><button class="btn-s" onclick="saveItem()">${isE?'수정완료':'추가'}</button></div>
+    </div>`;
+  }
+  return h;
+}
+
+function saveItem(){
+  const type=S.manageType;
+  const arr=[...(live[type]||[])];
+  
+  if(type==='cash'){
+    const name=(document.getElementById('fName')?.value||'').trim();
+    const amount=parseFloat(document.getElementById('fCashAmt')?.value||'0')||0;
+    const memo=(document.getElementById('fCashMemo')?.value||'').trim();
+    if(!name){alert('항목명을 입력해주세요'); return;}
+    
+    const newItem={id:S.editId||'cash'+Date.now(), name, amount, memo};
+    if(S.editId){ const idx=arr.findIndex(i=>i.id===S.editId); if(idx>=0) arr[idx]=newItem; }
+    else arr.push(newItem);
+    
+    fbSave('cash', arr);
+  }else{
+    const name=(document.getElementById('fName')?.value||'').trim();
+    const qty=parseFloat(document.getElementById('fQty')?.value||'0')||0;
+    if(!name){alert('이름을 입력해주세요'); return;}
+
+    let newItem={id:S.editId||type+Date.now(), name, qty};
+    if(type==='crypto'){
+      newItem.market=(document.getElementById('fMarket')?.value||'').trim().toUpperCase();
+    }else if(type==='stocks'){
+      newItem.ticker=(document.getElementById('fTicker')?.value||'').trim().toUpperCase();
+      newItem.currency=document.getElementById('fCurrency').value;
+    }else if(type==='etf'){
+      newItem.ticker=(document.getElementById('fTicker')?.value||'').trim().toUpperCase();
+      newItem.currency='KRW';
+    }
+
+    if(S.editId){ const idx=arr.findIndex(i=>i.id===S.editId); if(idx>=0) arr[idx]=newItem; }
+    else arr.push(newItem);
+
+    fbSave(type, arr);
+  }
+  S.showForm=false; S.editId=null;
+  render();
+  updatePrices();
+}
+
+function delItem(id){
+  if(!confirm('정말 삭제할까요?')) return;
+  const type=S.manageType;
+  const filtered=(live[type]||[]).filter(i=>i.id!==id);
+  fbSave(type, filtered);
+  render();
+}
+
+function initApp() {
+  ROOM = localStorage.getItem('asset_room');
+  if (!ROOM) {
+    document.getElementById('roomSetup').style.display = 'flex';
+    document.getElementById('mainApp').style.display = 'none';
+  } else {
+    document.getElementById('roomSetup').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'block';
+    initFirebase();
+    render();
+    updatePrices();
+  }
+}
+
+function setRoom() {
+  const codeInput = document.getElementById('roomCodeInput');
+  const code = (codeInput.value || '').trim();
+  if (code.length < 3) {
+    alert('공유 코드를 3자 이상 입력해주세요.');
+    codeInput.focus();
+    return;
+  }
+  localStorage.setItem('asset_room', code);
+  ROOM = code;
+  document.getElementById('roomSetup').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+  initFirebase();
+  render();
+  updatePrices();
+}
+
+function resetRoom() {
+  if (!confirm('공유 코드를 초기화할까요?')) return;
+  localStorage.removeItem('asset_room');
+  location.reload();
+}
+
+window.addEventListener('DOMContentLoaded', initApp);
+
+function initFirebase() {
+  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+  db = firebase.database();
+  
+  db.ref('.info/connected').on('value', snap => {
+    connected = !!snap.val();
+    const dot = document.getElementById('dot');
+    if (dot) {
+      if (connected) dot.classList.remove('off');
+      else dot.classList.add('off');
+    }
+  });
+
+  db.ref(`assets/${ROOM}/live`).on('value', snap => {
+    const val = snap.val();
+    if (val) {
+      live = {
+        crypto: val.crypto || [],
+        stocks: val.stocks || [],
+        etf: val.etf || [],
+        cash: val.cash || [],
+        history: val.history || []
+      };
+      render();
+    } else {
+      db.ref(`assets/${ROOM}/live`).set({
+        crypto: SEED_CRYPTO,
+        stocks: SEED_STOCKS,
+        etf: SEED_ETF,
+        cash: SEED_CASH,
+        history: SEED_HISTORY
+      });
+    }
+  });
+}
+
+function fbSave(key, data) {
+  if (db && ROOM) db.ref(`assets/${ROOM}/live/${key}`).set(data);
+  else { live[key] = data; render(); }
+}
+</script>
+</body>
+</html>
