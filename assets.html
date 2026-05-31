@@ -475,8 +475,9 @@ async function updatePrices(forceRecord=false){
 let firstLoad=true;
 
 function initFirebase(){
-  if(!firebase.apps.length) firebase.initializeApp(FB_CFG);
-  db=firebase.database();
+if(!firebase.apps.length) firebase.initializeApp(FB_CFG);
+firebase.auth().signInAnonymously().catch(e=>console.error('익명 로그인 실패',e));
+db=firebase.database();
   db.ref('.info/connected').on('value',snap=>{
     connected=!!snap.val();
     const dot=document.getElementById('dot');
