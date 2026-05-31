@@ -1,0 +1,29 @@
+name: 자산 자동 기록
+
+on:
+  schedule:
+    # 매일 밤 11시 KST = UTC 14:00
+    - cron: '0 14 * * *'
+  workflow_dispatch: # GitHub 웹에서 수동 실행 가능
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 20 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 의존성 설치
+        run: npm install --omit=dev
+
+      - name: 자산 기록 실행
+        run: node record.js
+        env:
+          FIREBASE_KEY: ${{ secrets.FIREBASE_KEY }}
