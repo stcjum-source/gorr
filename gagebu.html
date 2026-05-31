@@ -111,6 +111,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif;font
 </div>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script>
 // ── Firebase 설정 ─────────────────────────────────────────────
 const FB_CFG={
@@ -164,6 +165,7 @@ function fbSet(key,val){
 // ── Firebase 연결 ────────────────────────────────────────────
 function initFirebase(){
   if(!firebase.apps.length) firebase.initializeApp(FB_CFG);
+  firebase.auth().signInAnonymously().catch(e=>console.error('익명 로그인 실패',e));
   db=firebase.database();
   // 기존 localStorage 데이터 Firebase로 마이그레이션
   db.ref(`budgets/${ROOM}`).once('value',snap=>{
