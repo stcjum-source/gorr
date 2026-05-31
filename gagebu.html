@@ -105,8 +105,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif;font
 <div class="app">
   <div class="header">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <h1 style="font-size:15px;font-weight:600">📒 권능·가영 가계부 2026</h1>
-      <button onclick="resetRoom()" style="background:none;border:none;font-size:11px;color:var(--text3);cursor:pointer;padding:4px 8px;font-family:inherit">공유코드 재설정</button>
+      <h1 id="appTitle" style="font-size:15px;font-weight:600">📒 권능·가영 가계부</h1>
+      <div style="display:flex;align-items:center;gap:8px">
+        <select id="yearSel" onchange="setYear(this.value)" style="font-size:13px;font-weight:600;padding:4px 8px;border:1px solid var(--border2);border-radius:var(--r-sm);background:var(--bg);color:var(--text);font-family:inherit;outline:none;cursor:pointer"></select>
+        <button onclick="resetRoom()" style="background:none;border:none;font-size:11px;color:var(--text3);cursor:pointer;padding:4px 4px;font-family:inherit">재설정</button>
+      </div>
     </div>
     <div class="month-tabs" id="tabs"></div>
   </div>
@@ -129,11 +132,60 @@ const FB_CFG={
 let db=null, ROOM=localStorage.getItem('gagebu_room');
 let liveData={};
 
+// ── 연도 전환 ─────────────────────────────────────────────────
+// 데이터 키는 "보고 있는 연도"의 끝 2자리로 생성한다 (2026→'26', 2027→'27').
+// YEAR/YY는 연도 선택 버튼으로 바뀌는 가변값. 2026을 보면 YY==='26' →
+// 기존 키(e26_, fg26, cats26 ...)를 그대로 읽으므로 기존 데이터가 그대로 보존된다.
+const CUR_YEAR=new Date().getFullYear();   // 실제 올해(기본 선택값)
+let YEAR=CUR_YEAR;                          // 현재 화면에 보고 있는 연도
+let YY=String(YEAR).slice(-2);
+// 설정성 데이터(항목/고정지출/저축 목록)는 해당 연도 값이 없으면 직전 연도에서 이월(읽기 전용 복제).
+function cfgFallback(base,def){
+  if(liveData[base+YY]!=null) return liveData[base+YY];          // 그 연도 값이 있으면 그대로
+  for(let y=YEAR-1;y>=2026;y--){                                  // 없으면 직전 연도부터 역순 탐색
+    const pk=base+String(y).slice(-2);
+    if(liveData[pk]!=null) return JSON.parse(JSON.stringify(liveData[pk])); // 복제(원본 보존)
+  }
+  return def;
+}
+// 선택 가능한 연도 목록(데이터에 존재하는 연도 + 올해 + 내년)
+function availableYears(){
+  const set=new Set([CUR_YEAR,CUR_YEAR+1]);
+  Object.keys(liveData||{}).forEach(k=>{
+    const mm=k.match(/^(?:cats|fgm|sgm|ia|fg|sg|e)(\d\d)(?:_|$)/);
+    if(mm) set.add(2000+parseInt(mm[1],10));
+  });
+  return [...set].sort((a,b)=>a-b);
+}
+// 연도 전환: 방 전체가 이미 liveData에 로드돼 있으므로 키 접두(YY)만 바꾸고 다시 그린다.
+function setYear(y){
+  YEAR=Number(y); YY=String(YEAR).slice(-2);
+  S.showForm=false;S.editId=null;S.showIncForm=false;S.incEditId=null;
+  migrateIds();   // 선택 연도 항목에 id 백필(없을 때만)
+  render();
+}
+
+// ── 고유 ID + HTML 이스케이프(XSS 방지) ───────────────────────
+function genId(prefix){return prefix+Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
+// id 없는 기존 항목에 id 부여(하위호환). 하나라도 부여했으면 true.
+function ensureIds(arr,prefix){
+  if(!Array.isArray(arr)) return false;
+  let changed=false;
+  for(let i=0;i<arr.length;i++){
+    if(arr[i] && arr[i].id==null){arr[i].id=genId(prefix)+i;changed=true;}
+  }
+  return changed;
+}
+function esc(s){
+  return String(s==null?'':s).replace(/[&<>"']/g,c=>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
 // ── 기본 데이터 ───────────────────────────────────────────────
 const MONTHS=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
 const DEF_CATS=['식비','식재료','회사식비','교통/주유','건강','스킨케어','미용','쇼핑','문화/여가','교육비','여행','가족/효도','결혼준비','생활용품','경조사','기타'];
-function getCats(){return liveData['cats26']||DEF_CATS;}
-function saveCats(arr){fbSet('cats26',arr);}
+function getCats(){return cfgFallback('cats',DEF_CATS);}
+function saveCats(arr){fbSet('cats'+YY,arr);}
 const DEF_FIXED=[
   {id:'f1',name:'보험 합계 (권능)',amt:90570,tag:'권능'},
   {id:'f2',name:'용돈 (권능)',amt:300000,tag:'권능'},
@@ -151,14 +203,30 @@ const DEF_SAVINGS=[
 ];
 
 // ── 데이터 읽기/쓰기 ─────────────────────────────────────────
-function getFixed(){return liveData['fg26']||DEF_FIXED;}
-function getSav(){return liveData['sg26']||DEF_SAVINGS;}
-function getIncArr(m){return liveData['ia26_'+m]||[];}
-function setIncArr(m,v){fbSet('ia26_'+m,v);}
-function getExps(m){return liveData['e26_'+m]||[];}
-function setExps(m,a){fbSet('e26_'+m,a);return true;}
-function ft(){return getFixed().reduce((s,i)=>s+(Number(i.amt)||0),0);}
-function st(){return getSav().reduce((s,i)=>s+(Number(i.amt)||0),0);}
+// 고정지출/저축의 "항목 목록"(이름·태그·기준금액)은 모든 달이 공통 공유한다.
+function getFixedItems(){return cfgFallback('fg',DEF_FIXED);}
+function getSavItems(){return cfgFallback('sg',DEF_SAVINGS);}
+// 각 항목의 "금액"은 달마다 따로 저장한다: fgm<YY>_<m> = {항목id: 금액}.
+// 그 달 저장값이 없으면 직전 달 → … → 기준금액(목록의 amt) 순으로 이월(복사)한다.
+function monthAmtMap(base,m){
+  if(liveData[base+YY+'_'+m]!=null) return liveData[base+YY+'_'+m]; // 그 달 저장값
+  for(let mm=m-1;mm>=0;mm--){                                        // 직전 달부터 역순
+    if(liveData[base+YY+'_'+mm]!=null) return liveData[base+YY+'_'+mm];
+  }
+  return null;                                                       // 없으면 기준금액 사용
+}
+function resolveAmts(items,base,m){
+  const map=monthAmtMap(base,m);
+  return items.map(it=>({...it, amt:(map&&map[it.id]!=null)?map[it.id]:(Number(it.amt)||0)}));
+}
+function getFixedForMonth(m){return resolveAmts(getFixedItems(),'fgm',m);}
+function getSavForMonth(m){return resolveAmts(getSavItems(),'sgm',m);}
+function getIncArr(m){return liveData['ia'+YY+'_'+m]||[];}
+function setIncArr(m,v){fbSet('ia'+YY+'_'+m,v);}
+function getExps(m){return liveData['e'+YY+'_'+m]||[];}
+function setExps(m,a){fbSet('e'+YY+'_'+m,a);return true;}
+function ft(m){if(m==null)m=S.month;return getFixedForMonth(m).reduce((s,i)=>s+(Number(i.amt)||0),0);}
+function st(m){if(m==null)m=S.month;return getSavForMonth(m).reduce((s,i)=>s+(Number(i.amt)||0),0);}
 
 function fbSet(key,val){
   liveData[key]=val; // 즉시 로컬 반영
@@ -174,8 +242,13 @@ function initFirebase(){
   db.ref(`budgets/${ROOM}`).once('value',snap=>{
     if(!snap.val()){
       const mig={};let has=false;
-      const keys=['fg26','sg26','cats26'];
-      for(let m=0;m<12;m++){keys.push('e26_'+m);keys.push('ia26_'+m);}
+      const keys=['fg'+YY,'sg'+YY,'cats'+YY];
+      for(let m=0;m<12;m++){keys.push('e'+YY+'_'+m);keys.push('ia'+YY+'_'+m);}
+      // 레거시 2026 localStorage 키도 함께 스캔(데이터 유실 방지)
+      if(YY!=='26'){
+        keys.push('fg26','sg26','cats26');
+        for(let m=0;m<12;m++){keys.push('e26_'+m);keys.push('ia26_'+m);}
+      }
       keys.forEach(k=>{
         try{const v=localStorage.getItem(k);if(v){mig[k]=JSON.parse(v);has=true;}}catch(e){}
       });
@@ -184,22 +257,33 @@ function initFirebase(){
     // 실시간 리스닝
     db.ref(`budgets/${ROOM}`).on('value',s=>{
       liveData=s.val()||{};
+      migrateIds();           // id 없는 기존 항목에 id 부여(1회성, 수렴 후 추가 쓰기 없음)
       if(!S.showForm&&!S.showIncForm) render();
     });
   });
 }
 
+// id 없는 기존 지출/수입 항목에 고유 id를 부여하고 변경분만 Firebase에 저장.
+// 모든 항목에 id가 생기면 더 이상 쓰기가 발생하지 않아 무한 루프 없음.
+function migrateIds(){
+  if(!db||!ROOM) return;
+  for(let m=0;m<12;m++){
+    const ek='e'+YY+'_'+m, ik='ia'+YY+'_'+m;
+    if(ensureIds(liveData[ek],'x')) db.ref(`budgets/${ROOM}/${ek}`).set(liveData[ek]);
+    if(ensureIds(liveData[ik],'n')) db.ref(`budgets/${ROOM}/${ik}`).set(liveData[ik]);
+  }
+}
+
 const today=new Date();
-let S={month:today.getMonth(),view:'list',person:'권능',showForm:false,editIdx:null,addingCat:false,showIncForm:false,incEditIdx:null};
+let S={month:today.getMonth(),view:'list',person:'권능',showForm:false,editId:null,addingCat:false,showIncForm:false,incEditId:null};
 
 const INC_TYPES=['권능 월급','가영 월급','부수입 (권능)','부수입 (가영)','기타'];
 
 function fmt(n){return Math.abs(Math.round(n)).toLocaleString('ko-KR')+'원';}
 function fmtS(n){
   const a=Math.abs(Math.round(n)),sg=n<0?'-':'';
-  if(a>=10000000)return sg+(a/10000000).toFixed(1)+'억';
-  if(a>=1000000)return sg+(a/1000000).toFixed(1)+'백만';
-  if(a>=10000)return sg+(a/10000).toFixed(1)+'만';
+  // 만 단위로 표시(억/백만 안 씀). 예: 10,000,000→"1,000만", 12,500,000→"1,250만", 50,000→"5만"
+  if(a>=10000)return sg+Math.round(a/10000).toLocaleString('ko-KR')+'만';
   return sg+a.toLocaleString('ko-KR');
 }
 function todayStr(){
@@ -213,8 +297,15 @@ function renderTabs(){
   setTimeout(()=>{const a=document.querySelector('.tab.active');if(a)a.scrollIntoView({block:'nearest',inline:'center'});},50);
 }
 
+function renderYearSel(){
+  const sel=document.getElementById('yearSel');
+  if(!sel) return;
+  sel.innerHTML=availableYears().map(y=>`<option value="${y}" ${y===YEAR?'selected':''}>${y}년</option>`).join('');
+}
+
 function render(){
   renderTabs();
+  renderYearSel();
   const m=S.month;
   const incArr=getIncArr(m), exps=getExps(m);
   const FT=ft(),ST=st();
@@ -244,12 +335,12 @@ function render(){
   if(S.view==='income'){
     h+=`<div class="sec-title"><span>수입 내역 ${incArr.length}건</span><button class="add-btn" onclick="openIncForm(null)">+ 추가</button></div>`;
     if(S.showIncForm){
-      const isE=S.incEditIdx!=null;
-      const e=isE?incArr[S.incEditIdx]:{};
+      const isE=S.incEditId!=null;
+      const e=isE?(incArr.find(x=>x.id===S.incEditId)||{}):{};
       h+=`<div class="add-form ${isE?'edit-mode':''}">
-        <div class="form-row"><label>날짜</label><input type="date" id="iDate" value="${e.date||todayStr()}"></div>
-        <div class="form-row"><label>종류</label><select id="iType">${INC_TYPES.map(t=>`<option ${t===(e.type||INC_TYPES[0])?'selected':''}>${t}</option>`).join('')}</select></div>
-        <div class="form-row"><label>메모 (선택)</label><input type="text" id="iName" placeholder="예: 5월 급여, 프리랜서" value="${e.name||''}"></div>
+        <div class="form-row"><label>날짜</label><input type="date" id="iDate" value="${esc(e.date||todayStr())}"></div>
+        <div class="form-row"><label>종류</label><select id="iType">${INC_TYPES.map(t=>`<option ${t===(e.type||INC_TYPES[0])?'selected':''}>${esc(t)}</option>`).join('')}</select></div>
+        <div class="form-row"><label>메모 (선택)</label><input type="text" id="iName" placeholder="예: 5월 급여, 프리랜서" value="${esc(e.name||'')}"></div>
         <div class="form-row"><label>금액 (원)</label><input type="number" id="iAmt" inputmode="numeric" placeholder="0" value="${e.amt||''}"></div>
         <div class="form-actions">
           <button class="btn-cancel" onclick="closeIncForm()">취소</button>
@@ -260,19 +351,19 @@ function render(){
     if(incArr.length===0){
       h+=`<div class="empty"><div class="empty-icon">💰</div>수입 내역을 추가해보세요</div>`;
     }else{
-      const sorted=[...incArr.entries()].sort((a,b)=>(b[1].date||'')>(a[1].date||'')?1:-1);
+      const sorted=[...incArr].sort((a,b)=>(b.date||'')>(a.date||'')?1:-1);
       h+=`<div class="expense-list">`;
-      sorted.forEach(([oi,e])=>{
+      sorted.forEach(e=>{
         h+=`<div class="expense-item">
           <div class="exp-left">
-            <div class="exp-cat" style="background:var(--green-bg);color:var(--green)">${e.type}</div>
-            <div class="exp-name">${e.name||e.type}</div>
-            <div class="exp-date">${e.date||''}</div>
+            <div class="exp-cat" style="background:var(--green-bg);color:var(--green)">${esc(e.type)}</div>
+            <div class="exp-name">${esc(e.name||e.type)}</div>
+            <div class="exp-date">${esc(e.date)}</div>
           </div>
           <div class="exp-right">
             <div class="exp-amt" style="color:var(--green)">+${fmt(e.amt)}</div>
-            <button class="icon-btn" onclick="openIncForm(${oi})">수정</button>
-            <button class="icon-btn del" onclick="delInc(${oi})">✕</button>
+            <button class="icon-btn" onclick="openIncForm('${e.id}')">수정</button>
+            <button class="icon-btn del" onclick="delInc('${e.id}')">✕</button>
           </div>
         </div>`;
       });
@@ -285,12 +376,8 @@ function render(){
     const gayExps=exps.filter(e=>e.who==='가영');
     const keunTotal=keunExps.reduce((s,e)=>s+(Number(e.amt)||0),0);
     const gayTotal=gayExps.reduce((s,e)=>s+(Number(e.amt)||0),0);
-    const curExps=S.person==='권능'?keunExps:S.person==='가영'?gayExps:exps;
-    const curIdxMap=S.person==='전체'
-      ?exps.map((_,i)=>i)
-      :S.person==='권능'
-        ?exps.map((e,i)=>e.who==='권능'?i:-1).filter(i=>i>=0)
-        :exps.map((e,i)=>e.who==='가영'?i:-1).filter(i=>i>=0);
+    // 표시 대상 목록 (id 기준으로 다루므로 인덱스 매핑 불필요)
+    const curList=S.person==='전체'?exps:S.person==='권능'?keunExps:gayExps;
 
     h+=`<div style="display:flex;gap:6px;margin-bottom:10px">
       <div style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;cursor:pointer;${S.person==='권능'?'border-color:var(--accent);border-width:1.5px':''}" onclick="setPerson('권능')">
@@ -310,18 +397,18 @@ function render(){
       </div>
     </div>`;
 
-    h+=`<div class="sec-title"><span>${S.person} 지출 ${curIdxMap.length}건</span><button class="add-btn" onclick="openForm(null)">+ 추가</button></div>`;
+    h+=`<div class="sec-title"><span>${S.person} 지출 ${curList.length}건</span><button class="add-btn" onclick="openForm(null)">+ 추가</button></div>`;
 
     if(S.showForm){
-      const isE=S.editIdx!=null;
-      const e=isE?exps[S.editIdx]:{};
+      const isE=S.editId!=null;
+      const e=isE?(exps.find(x=>x.id===S.editId)||{}):{};
       const cats=getCats();
       h+=`<div class="add-form ${isE?'edit-mode':''}">
-        <div class="form-row"><label>날짜</label><input type="date" id="fDate" value="${e.date||todayStr()}"></div>
+        <div class="form-row"><label>날짜</label><input type="date" id="fDate" value="${esc(e.date||todayStr())}"></div>
         <div class="form-row">
           <label>항목</label>
           <div style="display:flex;gap:6px">
-            <select id="fCat" style="flex:1">${cats.map(c=>`<option ${c===(e.cat||cats[0])?'selected':''}>${c}</option>`).join('')}</select>
+            <select id="fCat" style="flex:1">${cats.map(c=>`<option ${c===(e.cat||cats[0])?'selected':''}>${esc(c)}</option>`).join('')}</select>
             <button type="button" onclick="toggleAddCat()" style="flex-shrink:0;padding:0 12px;border:1px solid var(--border2);border-radius:var(--r-sm);background:var(--bg);color:var(--text);cursor:pointer;font-size:13px">+ 항목</button>
           </div>
         </div>
@@ -329,7 +416,7 @@ function render(){
           <input type="text" id="newCatInput" placeholder="새 항목명" style="flex:1;padding:8px 10px;border:1px solid var(--accent);border-radius:var(--r-sm);font-size:14px;background:var(--bg);color:var(--text);font-family:inherit;outline:none">
           <button onclick="addCat()" style="padding:8px 12px;background:var(--accent);color:var(--bg);border:none;border-radius:var(--r-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">추가</button>
         </div>
-        <div class="form-row"><label>세부 내용</label><input type="text" id="fName" placeholder="예: 스타벅스, 이마트" value="${e.name||''}"></div>
+        <div class="form-row"><label>세부 내용</label><input type="text" id="fName" placeholder="예: 스타벅스, 이마트" value="${esc(e.name||'')}"></div>
         <div class="form-row"><label>금액 (원)</label><input type="number" id="fAmt" inputmode="numeric" placeholder="0" value="${e.amt||''}"></div>
         <div class="form-actions">
           <button class="btn-cancel" onclick="closeForm()">취소</button>
@@ -338,23 +425,23 @@ function render(){
       </div>`;
     }
 
-    if(curIdxMap.length===0){
+    if(curList.length===0){
       h+=`<div class="empty"><div class="empty-icon">📋</div>${S.person==='전체'?'지출 내역이 없어요':S.person+' 지출을 추가해보세요'}</div>`;
     }else{
-      const sortedCur=curIdxMap.map(oi=>([oi,exps[oi]])).sort((a,b)=>(b[1].date||'')>(a[1].date||'')?1:-1);
+      const sortedCur=[...curList].sort((a,b)=>(b.date||'')>(a.date||'')?1:-1);
       h+=`<div class="expense-list">`;
-      sortedCur.forEach(([oi,e])=>{
+      sortedCur.forEach(e=>{
         const neg=Number(e.amt)<0;
         h+=`<div class="expense-item">
           <div class="exp-left">
-            <div class="exp-cat">${e.cat}</div>
-            <div class="exp-name">${e.name||'(내용 없음)'}</div>
-            <div class="exp-date">${e.date||''}</div>
+            <div class="exp-cat">${esc(e.cat)}</div>
+            <div class="exp-name">${esc(e.name||'(내용 없음)')}</div>
+            <div class="exp-date">${esc(e.date)}</div>
           </div>
           <div class="exp-right">
             <div class="exp-amt ${neg?'neg':''}">${neg?'-':''}${fmt(e.amt)}</div>
-            <button class="icon-btn" onclick="openForm(${oi})">수정</button>
-            <button class="icon-btn del" onclick="delExp(${oi})">✕</button>
+            <button class="icon-btn" onclick="openForm('${e.id}')">수정</button>
+            <button class="icon-btn del" onclick="delExp('${e.id}')">✕</button>
           </div>
         </div>`;
       });
@@ -380,7 +467,7 @@ function render(){
         const pct=totalVar>0?Math.round(total/totalVar*100):0;
         const k=keunCatMap[cat]||0,g=gayCatMap[cat]||0;
         h+=`<div class="cat-row">
-          <div class="cat-top"><span>${cat}</span><span><strong>${fmt(total)}</strong> <span class="cat-pct">${pct}%</span></span></div>
+          <div class="cat-top"><span>${esc(cat)}</span><span><strong>${fmt(total)}</strong> <span class="cat-pct">${pct}%</span></span></div>
           <div class="bar-bg"><div class="bar-fill" style="width:${Math.round(total/maxAll*100)}%"></div></div>
           <div style="display:flex;gap:8px;margin-top:4px;font-size:11px;color:var(--text3)">
             ${k?`<span>권능 ${fmt(k)}</span>`:''}${g?`<span>가영 ${fmt(g)}</span>`:''}
@@ -392,8 +479,8 @@ function render(){
     h+=`<div class="sec-title" style="margin-top:14px"><span>항목 관리</span></div>
     <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--r);overflow:hidden">
       ${cats.map(c=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 13px;border-bottom:1px solid var(--border);font-size:13px">
-        <span>${c}</span>
-        <button onclick="delCat(${JSON.stringify(c)})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:0 4px;line-height:1">×</button>
+        <span>${esc(c)}</span>
+        <button onclick="delCat(${esc(JSON.stringify(c))})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:0 4px;line-height:1">×</button>
       </div>`).join('')}
       <div style="padding:10px 13px;display:flex;gap:6px">
         <input id="newCatDirect" type="text" placeholder="새 항목명 입력" style="flex:1;padding:7px 10px;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;background:var(--bg);color:var(--text);font-family:inherit;outline:none">
@@ -403,17 +490,17 @@ function render(){
   }
 
   if(S.view==='fixed'){
-    const fi=getFixed(),si=getSav();
+    const fi=getFixedForMonth(S.month),si=getSavForMonth(S.month);
     const byT={권능:[],가영:[],공통:[]};
     fi.forEach(it=>{if(byT[it.tag])byT[it.tag].push(it);});
-    h+=`<div class="save-bar"><span class="save-hint">수정 후 저장 버튼을 눌러주세요</span><button class="btn-fixed-save" onclick="saveFixed()">저장</button></div>`;
+    h+=`<div class="save-bar"><span class="save-hint">${MONTHS[S.month]} 금액 · 항목은 모든 달 공통</span><button class="btn-fixed-save" onclick="saveFixed()">저장</button></div>`;
     ['권능','가영','공통'].forEach(tag=>{
       const items=byT[tag];
       const sub=items.reduce((s,i)=>s+(Number(i.amt)||0),0);
       h+=`<div class="fixed-box"><div class="fixed-header"><span>${tag} 고정지출</span><span>${fmt(sub)}</span></div>`;
       items.forEach(it=>{
         h+=`<div class="fixed-item">
-          <input class="fixed-input" style="flex:1;width:auto" type="text" data-name="${it.id}" value="${it.name}" placeholder="항목명">
+          <input class="fixed-input" style="flex:1;width:auto" type="text" data-name="${it.id}" value="${esc(it.name)}" placeholder="항목명">
           <input class="fixed-input" style="width:100px" type="number" inputmode="numeric" data-id="${it.id}" value="${it.amt}" oninput="previewFixed()" placeholder="0">
           <span class="fixed-unit">원</span>
           <button onclick="delFixed('${it.id}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:0 2px;line-height:1;flex-shrink:0">×</button>
@@ -429,7 +516,7 @@ function render(){
     h+=`<div class="fixed-box"><div class="fixed-header"><span class="saving-label">💚 저축 / 투자</span><span class="saving-label">${fmt(savSub)}</span></div>`;
     si.forEach(it=>{
       h+=`<div class="fixed-item">
-        <input class="fixed-input" style="flex:1;width:auto" type="text" data-sname="${it.id}" value="${it.name}" placeholder="항목명">
+        <input class="fixed-input" style="flex:1;width:auto" type="text" data-sname="${it.id}" value="${esc(it.name)}" placeholder="항목명">
         <input class="fixed-input" style="width:100px" type="number" inputmode="numeric" data-sid="${it.id}" value="${it.amt}" oninput="previewFixed()" placeholder="0">
         <span class="fixed-unit">원</span>
         <button onclick="delSaving('${it.id}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:0 2px;line-height:1;flex-shrink:0">×</button>
@@ -449,12 +536,12 @@ function render(){
   document.getElementById('content').innerHTML=h;
 }
 
-function selM(i){S.month=i;S.showForm=false;S.editIdx=null;S.showIncForm=false;S.incEditIdx=null;render();}
-function setV(v){S.view=v;S.showForm=false;S.editIdx=null;S.showIncForm=false;S.incEditIdx=null;render();}
-function openForm(idx){S.showForm=true;S.editIdx=idx;render();setTimeout(()=>{const el=document.getElementById('fName');if(el)el.focus();},80);}
-function closeForm(){S.showForm=false;S.editIdx=null;render();}
-function openIncForm(idx){S.showIncForm=true;S.incEditIdx=idx;render();setTimeout(()=>{const el=document.getElementById('iAmt');if(el){el.focus();el.select();}},80);}
-function closeIncForm(){S.showIncForm=false;S.incEditIdx=null;render();}
+function selM(i){S.month=i;S.showForm=false;S.editId=null;S.showIncForm=false;S.incEditId=null;render();}
+function setV(v){S.view=v;S.showForm=false;S.editId=null;S.showIncForm=false;S.incEditId=null;render();}
+function openForm(id){S.showForm=true;S.editId=id;render();setTimeout(()=>{const el=document.getElementById('fName');if(el)el.focus();},80);}
+function closeForm(){S.showForm=false;S.editId=null;render();}
+function openIncForm(id){S.showIncForm=true;S.incEditId=id;render();setTimeout(()=>{const el=document.getElementById('iAmt');if(el){el.focus();el.select();}},80);}
+function closeIncForm(){S.showIncForm=false;S.incEditId=null;render();}
 
 function saveInc(){
   const date=document.getElementById('iDate')?.value||todayStr();
@@ -464,18 +551,20 @@ function saveInc(){
   const amt=Number(amtV);
   if(!amtV.trim()||isNaN(amt)||amt===0){alert('금액을 입력해주세요');return;}
   const m=S.month,arr=getIncArr(m);
-  if(S.incEditIdx!=null){arr[S.incEditIdx]={date,type,name,amt};}
-  else{arr.push({date,type,name,amt});}
+  if(S.incEditId!=null){
+    const it=arr.find(x=>x.id===S.incEditId);
+    if(it){it.date=date;it.type=type;it.name=name;it.amt=amt;}
+  }else{arr.push({id:genId('n'),date,type,name,amt});}
   arr.sort((a,b)=>(a.date||'')>(b.date||'')?1:-1);
   setIncArr(m,arr);
-  S.showIncForm=false;S.incEditIdx=null;render();
+  S.showIncForm=false;S.incEditId=null;render();
 }
-function delInc(i){
+function delInc(id){
   if(!confirm('삭제할까요?'))return;
-  const m=S.month,arr=getIncArr(m);
-  arr.splice(i,1);setIncArr(m,arr);render();
+  const m=S.month,arr=getIncArr(m).filter(x=>x.id!==id);
+  setIncArr(m,arr);render();
 }
-function setPerson(p){S.person=p;S.showForm=false;S.editIdx=null;render();}
+function setPerson(p){S.person=p;S.showForm=false;S.editId=null;render();}
 function saveExp(){
   const date=document.getElementById('fDate')?.value||todayStr();
   const cat=document.getElementById('fCat')?.value||getCats()[0];
@@ -485,16 +574,18 @@ function saveExp(){
   if(!amtV.trim()||isNaN(amt)||amt===0){alert('금액을 입력해주세요');return;}
   const who=S.person==='전체'?'권능':S.person;
   const m=S.month,exps=getExps(m);
-  if(S.editIdx!=null){exps[S.editIdx]={...exps[S.editIdx],date,cat,name,amt,who};}
-  else{exps.push({date,cat,name,amt,who});}
+  if(S.editId!=null){
+    const it=exps.find(x=>x.id===S.editId);
+    if(it){it.date=date;it.cat=cat;it.name=name;it.amt=amt;it.who=who;}
+  }else{exps.push({id:genId('x'),date,cat,name,amt,who});}
   exps.sort((a,b)=>(a.date||'')>(b.date||'')?1:-1);
   setExps(m,exps);
-  S.showForm=false;S.editIdx=null;render();
+  S.showForm=false;S.editId=null;render();
 }
-function delExp(i){
+function delExp(id){
   if(!confirm('삭제할까요?'))return;
-  const m=S.month,exps=getExps(m);
-  exps.splice(i,1);setExps(m,exps);render();
+  const m=S.month,exps=getExps(m).filter(x=>x.id!==id);
+  setExps(m,exps);render();
 }
 function previewFixed(){
   let fSum=0,sSum=0;
@@ -505,29 +596,34 @@ function previewFixed(){
   if(sr)sr.innerHTML=`<span class="saving-label">저축 포함 합계</span><span class="saving-label">${fmt(fSum+sSum)}</span>`;
 }
 function saveFixed(){
-  const fi=getFixed(),si=getSav();
+  const m=S.month;
+  // (1) 항목 이름은 공통 목록(fg/sg)에 저장 — 모든 달에 반영
+  const fi=getFixedItems(),si=getSavItems();
   document.querySelectorAll('[data-name]').forEach(el=>{const it=fi.find(i=>i.id===el.dataset.name);if(it)it.name=el.value.trim()||it.name;});
-  document.querySelectorAll('[data-id]').forEach(el=>{const it=fi.find(i=>i.id===el.dataset.id);if(it)it.amt=Number(el.value)||0;});
   document.querySelectorAll('[data-sname]').forEach(el=>{const it=si.find(i=>i.id===el.dataset.sname);if(it)it.name=el.value.trim()||it.name;});
-  document.querySelectorAll('[data-sid]').forEach(el=>{const it=si.find(i=>i.id===el.dataset.sid);if(it)it.amt=Number(el.value)||0;});
-  fbSet('fg26',fi);fbSet('sg26',si);
+  fbSet('fg'+YY,fi);fbSet('sg'+YY,si);
+  // (2) 금액은 이 달 전용 맵(fgm/sgm)에만 저장 — 다른 달에 영향 없음
+  const fMap={},sMap={};
+  document.querySelectorAll('[data-id]').forEach(el=>{fMap[el.dataset.id]=Number(el.value)||0;});
+  document.querySelectorAll('[data-sid]').forEach(el=>{sMap[el.dataset.sid]=Number(el.value)||0;});
+  fbSet('fgm'+YY+'_'+m,fMap);fbSet('sgm'+YY+'_'+m,sMap);
   alert('저장됐어요!');render();
 }
-function delFixed(id){if(!confirm('삭제할까요?'))return;fbSet('fg26',getFixed().filter(i=>i.id!==id));render();}
+function delFixed(id){if(!confirm('삭제할까요?'))return;fbSet('fg'+YY,getFixedItems().filter(i=>i.id!==id));render();}
 function addFixed(tag){
   const n=(document.getElementById('newFN_'+tag)?.value||'').trim();
   const a=Number(document.getElementById('newFA_'+tag)?.value)||0;
   if(!n){alert('항목명을 입력해주세요');return;}
-  const fi=getFixed();fi.push({id:'f'+Date.now(),name:n,amt:a,tag});
-  fbSet('fg26',fi);render();
+  const fi=getFixedItems();fi.push({id:'f'+Date.now(),name:n,amt:a,tag});
+  fbSet('fg'+YY,fi);render();
 }
-function delSaving(id){if(!confirm('삭제할까요?'))return;fbSet('sg26',getSav().filter(i=>i.id!==id));render();}
+function delSaving(id){if(!confirm('삭제할까요?'))return;fbSet('sg'+YY,getSavItems().filter(i=>i.id!==id));render();}
 function addSaving(){
   const n=(document.getElementById('newSN')?.value||'').trim();
   const a=Number(document.getElementById('newSA')?.value)||0;
   if(!n){alert('항목명을 입력해주세요');return;}
-  const si=getSav();si.push({id:'s'+Date.now(),name:n,amt:a});
-  fbSet('sg26',si);render();
+  const si=getSavItems();si.push({id:'s'+Date.now(),name:n,amt:a});
+  fbSet('sg'+YY,si);render();
 }
 function addCatDirect(){
   const inp=document.getElementById('newCatDirect');
@@ -577,6 +673,7 @@ function resetRoom(){
 
 // ── 시작 ────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded',function(){
+  document.title='권능·가영 가계부';
   if(!ROOM){
     render();
     document.getElementById('roomSetup').style.display='flex';
