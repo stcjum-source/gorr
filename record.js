@@ -107,30 +107,69 @@ async function fetchNaverPrice(code) {
   return null;
 }
 
+// Yahoo가 클라우드(GitHub Actions) IP를 차단하므로, 직접 호출 실패 시
+// CORS 릴레이 프록시를 거쳐 다른 IP에서 나가는 것처럼 재시도한다.
+// (assets.html 브라우저 앱과 동일한 우회 전략)
+const RELAY_PROXIES = [
+  u => u, // 1순위: 직접 호출
+  u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  u => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+  u => `https://thingproxy.freeboard.io/fetch/${u}`,
+];
+
 async function fetchYahooPrice(ticker) {
-  const headers = { 'User-Agent': BROWSER_UA, Accept: 'application/json' };
+  const headers = {
+    'User-Agent': BROWSER_UA,
+    Accept: 'application/json',
+    'Accept-Language': 'en-US,en;q=0.9',
+  };
   for (const base of ['https://query1.finance.yahoo.com', 'https://query2.finance.yahoo.com']) {
-    const d = await fetchJSON(
-      `${base}/v8/finance/chart/${ticker}?interval=1d&range=2d`,
-      10000,
-      { headers }
-    );
-    const price = d?.chart?.result?.[0]?.meta?.regularMarketPrice;
-    if (price) return price;
+    const target = `${base}/v8/finance/chart/${ticker}?interval=1d&range=2d`;
+    for (const wrap of RELAY_PROXIES) {
+      const d = await fetchJSON(wrap(target), 10000, { headers });
+      const price = d?.chart?.result?.[0]?.meta?.regularMarketPrice;
+      if (price) return price;
+    }
   }
   return null;
 }
 
+// Stooq: Yahoo와 완전히 별개인 무료 시세 소스 (CSV).
+// 미국 주식은 소문자 + ".us" 접미사를 쓴다. 예: PLTR → pltr.us
+async function fetchStooqPrice(ticker) {
+  const sym = `${ticker.toLowerCase()}.us`;
+  const url = `https://stooq.com/q/l/?s=${sym}&f=sd2t2ohlcv&h&e=csv`;
+  try {
+    const r = await fetchWithTimeout(url, 8000, { headers: { 'User-Agent': BROWSER_UA } });
+    if (!r.ok) return null;
+    const text = await r.text();
+    // 헤더: Symbol,Date,Time,Open,High,Low,Close,Volume
+    const lines = text.trim().split('\n');
+    if (lines.length < 2) return null;
+    const cols = lines[1].split(',');
+    const close = parseFloat(cols[6]);
+    if (!isNaN(close) && close > 0) return close;
+  } catch (_) {}
+  return null;
+}
+
+// { price, source } 형태로 반환 — 어느 소스가 성공했는지 로깅용
 async function fetchStockPrice(ticker) {
   // 국내 (KS/KQ) → 네이버, 실패 시 Yahoo
   if (ticker.endsWith('.KS') || ticker.endsWith('.KQ')) {
     const code = ticker.replace('.KS', '').replace('.KQ', '');
     const p = await fetchNaverPrice(code);
-    if (p != null) return p;
-    return fetchYahooPrice(ticker);
+    if (p != null) return { price: p, source: 'naver' };
+    const y = await fetchYahooPrice(ticker);
+    if (y != null) return { price: y, source: 'yahoo' };
+    return { price: null, source: null };
   }
-  // 미국 → Yahoo Finance
-  return fetchYahooPrice(ticker);
+  // 미국 → Yahoo (직접+프록시) → Stooq 백업
+  const y = await fetchYahooPrice(ticker);
+  if (y != null) return { price: y, source: 'yahoo' };
+  const s = await fetchStooqPrice(ticker);
+  if (s != null) return { price: s, source: 'stooq' };
+  return { price: null, source: null };
 }
 
 // ── 총자산 계산 (assets.html calcAssetVal과 동일 로직) ─────────
@@ -216,10 +255,10 @@ async function main() {
   log(`--- 주식/ETF ${tradeItems.length}개 가격 조회 ---`);
   await Promise.allSettled(
     tradeItems.map(async item => {
-      const p = await fetchStockPrice(item.ticker);
-      if (p != null) {
-        prices[item.ticker] = p;
-        log(`  ✓ ${item.name} (${item.ticker}): ${p}`);
+      const { price, source } = await fetchStockPrice(item.ticker);
+      if (price != null) {
+        prices[item.ticker] = price;
+        log(`  ✓ ${item.name} (${item.ticker}): ${price} [${source}]`);
       } else {
         log(`  ✗ ${item.name} (${item.ticker}): 조회 실패`);
       }
