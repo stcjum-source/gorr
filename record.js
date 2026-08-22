@@ -28,6 +28,24 @@ const NAVER_US = {
   IREN: { code: 'IREN.O', type: 'stock' },
   O: { code: 'O.K', type: 'stock' },
 };
+const encodePriceKey = key => String(key).replaceAll('.', '__DOT__');
+const decodePriceKey = key => String(key).replaceAll('__DOT__', '.');
+
+function decodeChanges(raw) {
+  const decoded = {};
+  for (const [key, value] of Object.entries(raw || {})) decoded[decodePriceKey(key)] = value;
+  return decoded;
+}
+
+function buildFirebasePrices(prices, exRate, changes, source) {
+  const payload = {};
+  for (const [key, value] of Object.entries(prices)) {
+    if (Number.isFinite(Number(value))) payload[encodePriceKey(key)] = Number(value);
+  }
+  const encodedChanges = {};
+  for (const [key, value] of Object.entries(changes || {})) encodedChanges[encodePriceKey(key)] = value;
+  return { ...payload, exRate, changes: encodedChanges, updatedAt: new Date().toISOString(), ...(source ? { source } : {}) };
+}
 
 // ── 유틸 ──────────────────────────────────────────────────────
 function log(msg) {
@@ -323,7 +341,7 @@ async function main() {
   const prices = {};
   for (const [key, value] of Object.entries(cachedPrices)) {
     if (key !== 'changes' && key !== 'exRate' && key !== 'updatedAt' && Number.isFinite(Number(value))) {
-      prices[key] = Number(value);
+      prices[decodePriceKey(key)] = Number(value);
     }
   }
   const freshKeys = new Set();
@@ -347,7 +365,7 @@ async function main() {
   const tradeItems = [...stocks, ...etfs].filter(i => !i.manual);
   log(`--- 주식/ETF ${tradeItems.length}개 가격 조회 ---`);
   const foreignBatch = await fetchNaverUsPrices(tradeItems);
-  const changes = { ...(cachedPrices.changes || {}) };
+  const changes = decodeChanges(cachedPrices.changes);
   for (const [ticker, quote] of foreignBatch) {
     prices[ticker] = quote.price;
     freshKeys.add(ticker);
@@ -370,13 +388,7 @@ async function main() {
   // 장중 가격 캐시 전용 실행. history는 건드리지 않고 Firebase 시세만 갱신한다.
   // 브라우저의 Yahoo/CORS 조회가 실패해도 앱은 이 마지막 서버 가격을 계속 표시한다.
   if (process.env.PRICE_ONLY === '1') {
-    await db.ref(`assets/${ROOM}/prices`).set({
-      ...prices,
-      exRate,
-      changes,
-      updatedAt: new Date().toISOString(),
-      source: 'server-cache',
-    });
+    await db.ref(`assets/${ROOM}/prices`).set(buildFirebasePrices(prices, exRate, changes, 'server-cache'));
     log(`✅ 장중 가격 캐시 갱신: ${Object.keys(prices).length}개`);
     await admin.app().delete();
     return;
@@ -443,7 +455,7 @@ async function main() {
 
   await db.ref(`assets/${ROOM}`).update({
     history: arr,
-    prices: { ...prices, exRate, changes, updatedAt: new Date().toISOString() },
+    prices: buildFirebasePrices(prices, exRate, changes),
   });
   log(`\n✅ 완료: ${ds} → ${(grand / 1e8).toFixed(2)}억원`);
 
@@ -457,4 +469,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { fetchNaverUsPrices, fetchStockPrice };
+module.exports = { fetchNaverUsPrices, fetchStockPrice, buildFirebasePrices, decodePriceKey };

@@ -272,6 +272,8 @@ let freshKeys = new Set(); // 이번 updatePrices()에서 "실시간" 조회에 
 let priceUpdateInFlight = false; // 화면 로딩 표시와 분리한 중복 조회 잠금
 let priceUpdateSeq = 0;
 const PRICE_CACHE_KEY=`asset-price-cache-v2:${ROOM||'default'}`;
+const encodePriceKey=key=>String(key).replaceAll('.','__DOT__');
+const decodePriceKey=key=>String(key).replaceAll('__DOT__','.');
 
 // Firebase/외부 API가 잠시 실패해도 직전에 정상 표시됐던 가격은 지우지 않는다.
 // 숫자 시세만 복원해 메타데이터(source 등)가 prices에 섞이지 않게 한다.
@@ -280,11 +282,13 @@ function mergePriceCache(payload){
   Object.entries(payload).forEach(([key,value])=>{
     if(['changes','exRate','updatedAt','source'].includes(key)) return;
     const n=Number(value);
-    if(Number.isFinite(n)&&n>0) prices[key]=n;
+    if(Number.isFinite(n)&&n>0) prices[decodePriceKey(key)]=n;
   });
   const fx=Number(payload.exRate);
   if(Number.isFinite(fx)&&fx>0) exRate=fx;
-  if(payload.changes&&typeof payload.changes==='object') Object.assign(priceChanges,payload.changes);
+  if(payload.changes&&typeof payload.changes==='object'){
+    Object.entries(payload.changes).forEach(([key,value])=>{priceChanges[decodePriceKey(key)]=value;});
+  }
 }
 function restoreLocalPriceCache(){
   try{mergePriceCache(JSON.parse(localStorage.getItem(PRICE_CACHE_KEY)||'null'));}catch(e){}
@@ -545,8 +549,10 @@ async function updatePrices(forceRecord=false){
   // 이번 조회에서 성공한 필드만 갱신한다. 부분 실패가 서버의 마지막 정상가를
   // 통째로 지우는 기존 set() 동작을 막는다.
   if(db&&ROOM){
-    const patch={changes:priceChanges,updatedAt:now.toISOString(),source:'browser'};
-    freshKeys.forEach(key=>{if(Number.isFinite(Number(prices[key]))) patch[key]=Number(prices[key]);});
+    const encodedChanges={};
+    Object.entries(priceChanges).forEach(([key,value])=>{encodedChanges[encodePriceKey(key)]=value;});
+    const patch={changes:encodedChanges,updatedAt:now.toISOString(),source:'browser'};
+    freshKeys.forEach(key=>{if(Number.isFinite(Number(prices[key]))) patch[encodePriceKey(key)]=Number(prices[key]);});
     if(fxOk&&Number.isFinite(Number(exRate))) patch.exRate=Number(exRate);
     db.ref(`assets/${ROOM}/prices`).update(patch);
   }
