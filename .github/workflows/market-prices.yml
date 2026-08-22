@@ -1,0 +1,34 @@
+name: 장중 자산 가격 갱신
+
+on:
+  schedule:
+    # 한국장(UTC 00~06) + 미국장 DST/표준시 범위(UTC 13~21), 평일 15분 간격
+    - cron: '*/15 0-6,13-21 * * 1-5'
+  workflow_dispatch:
+
+concurrency:
+  group: market-asset-prices
+  cancel-in-progress: true
+
+jobs:
+  update-prices:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 20 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 의존성 설치
+        run: npm install --omit=dev
+
+      - name: Firebase 가격 캐시 갱신
+        run: node record.js
+        env:
+          FIREBASE_KEY: ${{ secrets.FIREBASE_KEY }}
+          PRICE_ONLY: '1'

@@ -176,7 +176,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif;font
 // ── 시드 데이터 ──────────────────────────────────────────────
 const SEED_CRYPTO=[{"id":"c1","name":"비트코인","market":"KRW-BTC","qty":0.658706},{"id":"c2","name":"이더리움","market":"KRW-ETH","qty":22.61},{"id":"c3","name":"솔라나","market":"KRW-SOL","qty":72.01},{"id":"c4","name":"리플","market":"KRW-XRP","qty":2612.42},{"id":"c5","name":"도지코인","market":"KRW-DOGE","qty":4437.54},{"id":"c6","name":"에이다","market":"KRW-ADA","qty":5318},{"id":"c7","name":"수이","market":"KRW-SUI","qty":346.46},{"id":"c8","name":"트럼프코인","market":"KRW-TRUMP","qty":145.28},{"id":"c9","name":"랜더토큰","market":"KRW-RENDER","qty":253.837},{"id":"c10","name":"세이","market":"KRW-SEI","qty":42465.19},{"id":"c11","name":"샌드박스","market":"KRW-SAND","qty":2389},{"id":"c12","name":"비체인","market":"KRW-VET","qty":94457.76},{"id":"c13","name":"폴리곤","market":"KRW-POL","qty":1001.01}];
 const SEED_STOCKS=[{"id":"s1","name":"팔란티어","ticker":"PLTR","qty":80,"currency":"USD"},{"id":"s2","name":"테슬라","ticker":"TSLA","qty":22.34,"currency":"USD"},{"id":"s3","name":"TSLL","ticker":"TSLL","qty":692.144,"currency":"USD"},{"id":"s4","name":"써클","ticker":"CRCL","qty":15.41,"currency":"USD"},{"id":"s5","name":"비트마인","ticker":"BMNR","qty":153.92,"currency":"USD"},{"id":"s6","name":"리얼티인컴","ticker":"O","qty":0,"currency":"USD"},{"id":"s7","name":"TSL3(런던)","ticker":"3TSL.L","qty":65,"currency":"USD","manual":true}];
-const SEED_ETF=[{"id":"e1","name":"TIGER 차이나전기차","ticker":"371460.KS","qty":775,"currency":"KRW"},{"id":"e2","name":"KOACT 코스닥액티브","ticker":"243890.KS","qty":473,"currency":"KRW"},{"id":"e3","name":"TIGER 코리아AI전력기기TOP3","ticker":"494640.KS","qty":186,"currency":"KRW"},{"id":"e4","name":"SOL 조선TOP3플러스","ticker":"466920.KS","qty":1,"currency":"KRW"},{"id":"e5","name":"1Q 미국우주항공테크","ticker":"469130.KS","qty":455,"currency":"KRW"}];
+const SEED_ETF=[{"id":"e1","name":"TIGER 차이나전기차","ticker":"371460.KS","qty":775,"currency":"KRW"},{"id":"e2","name":"KOACT 코스닥액티브","ticker":"0163Y0.KS","qty":473,"currency":"KRW"},{"id":"e3","name":"TIGER 코리아AI전력기기TOP3","ticker":"0117V0.KS","qty":186,"currency":"KRW"},{"id":"e4","name":"SOL 조선TOP3플러스","ticker":"466920.KS","qty":1,"currency":"KRW"},{"id":"e5","name":"1Q 미국우주항공테크","ticker":"0131V0.KS","qty":455,"currency":"KRW"}];
+const ETF_TICKER_FIX={
+  '243890.KS':'0163Y0.KS', // KoAct 코스닥액티브
+  '494640.KS':'0117V0.KS', // TIGER 코리아AI전력기기TOP3플러스
+  '469130.KS':'0131V0.KS', // 1Q 미국우주항공테크
+};
+const NAVER_US={
+  PLTR:{code:'PLTR.O',type:'stock'},
+  TSLA:{code:'TSLA.O',type:'stock'},
+  TSLL:{code:'TSLL.O',type:'etf'},
+  CRCL:{code:'CRCL.K',type:'stock'},
+  BMNR:{code:'BMNR.K',type:'stock'},
+  MSTR:{code:'MSTR.O',type:'stock'},
+  IREN:{code:'IREN.O',type:'stock'},
+  O:{code:'O.K',type:'stock'},
+};
 const SEED_CASH=[{"id":"cash1","name":"현금","amount":46370000},{"id":"cash2","name":"주택청약","amount":40240000},{"id":"cash3","name":"기타","amount":7100000}];
 const SEED_HISTORY=[{"date":"2025-08-12","crypto":251607357,"stocks":60401070,"etf":0,"cash":0,"total":312008428},{"date":"2025-08-13","crypto":258317643,"stocks":60474277,"etf":0,"cash":0,"total":318791920},{"date":"2025-08-14","crypto":268483410,"stocks":60909785,"etf":0,"cash":0,"total":329393195},{"date":"2025-08-15","crypto":267145859,"stocks":59664286,"etf":0,"cash":0,"total":326810145},{"date":"2025-08-17","crypto":259556955,"stocks":59070837,"etf":0,"cash":0,"total":318627792},{"date":"2025-08-18","crypto":259556955,"stocks":59070837,"etf":0,"cash":0,"total":318627792},{"date":"2025-08-19","crypto":250984792,"stocks":58919780,"etf":0,"cash":0,"total":309904572},{"date":"2025-08-20","crypto":250984792,"stocks":57961933,"etf":0,"cash":0,"total":308946725},{"date":"2025-08-21","crypto":253307304,"stocks":55175994,"etf":0,"cash":0,"total":308483297},{"date":"2025-08-22","crypto":253307304,"stocks":56384386,"etf":0,"cash":0,"total":309691690},{"date":"2025-08-23","crypto":266326537,"stocks":57635949,"etf":0,"cash":0,"total":323962487},{"date":"2025-08-24","crypto":268967227,"stocks":57857805,"etf":0,"cash":0,"total":326825032},{"date":"2025-08-25","crypto":260838013,"stocks":57857805,"etf":0,"cash":0,"total":318695819},{"date":"2025-08-26","crypto":260838013,"stocks":58434369,"etf":0,"cash":0,"total":319272382},{"date":"2025-08-27","crypto":260838013,"stocks":59472463,"etf":0,"cash":0,"total":320310477},{"date":"2025-08-28","crypto":260838013,"stocks":59955101,"etf":0,"cash":0,"total":320793114},{"date":"2025-08-29","crypto":260838013,"stocks":57966633,"etf":0,"cash":0,"total":318804647},{"date":"2025-08-30","crypto":252449546,"stocks":57966633,"etf":0,"cash":0,"total":310416180},{"date":"2025-08-31","crypto":252070326,"stocks":57713596,"etf":0,"cash":0,"total":309783922},{"date":"2025-09-01","crypto":254756311,"stocks":57713596,"etf":0,"cash":0,"total":312469907},{"date":"2025-09-02","crypto":250734987,"stocks":57839854,"etf":0,"cash":0,"total":308574842},{"date":"2025-09-03","crypto":250577825,"stocks":57123789,"etf":0,"cash":0,"total":307701614},{"date":"2025-09-04","crypto":257121732,"stocks":58931335,"etf":0,"cash":0,"total":316053067},{"date":"2025-09-05","crypto":251236476,"stocks":57679800,"etf":0,"cash":0,"total":308916276},{"date":"2025-09-06","crypto":253171801,"stocks":58901395,"etf":0,"cash":0,"total":312073196},{"date":"2025-09-07","crypto":251738497,"stocks":59410175,"etf":0,"cash":0,"total":311148673},{"date":"2025-09-08","crypto":251738497,"stocks":59410175,"etf":0,"cash":0,"total":311148673},{"date":"2025-09-09","crypto":256768869,"stocks":59788284,"etf":0,"cash":0,"total":316557153},{"date":"2025-09-10","crypto":253842470,"stocks":59768519,"etf":0,"cash":0,"total":313610989},{"date":"2025-09-11","crypto":260611787,"stocks":61673809,"etf":0,"cash":0,"total":322285595},{"date":"2025-09-12","crypto":261992745,"stocks":62486633,"etf":0,"cash":0,"total":324479379},{"date":"2025-09-13","crypto":272219632,"stocks":69377898,"etf":0,"cash":0,"total":341597530},{"date":"2025-09-14","crypto":272219632,"stocks":69377989,"etf":0,"cash":0,"total":341597621},{"date":"2025-09-15","crypto":269649865,"stocks":69377989,"etf":0,"cash":0,"total":339027853},{"date":"2025-09-16","crypto":264722907,"stocks":72296098,"etf":0,"cash":0,"total":337019005},{"date":"2025-09-17","crypto":264722907,"stocks":71990765,"etf":0,"cash":0,"total":336713672},{"date":"2025-09-18","crypto":254339847,"stocks":72439684,"etf":0,"cash":0,"total":326779531},{"date":"2025-09-19","crypto":261305527,"stocks":74627113,"etf":0,"cash":0,"total":335932640},{"date":"2025-09-20","crypto":256785103,"stocks":76228331,"etf":0,"cash":0,"total":333013435},{"date":"2025-09-21","crypto":257240444,"stocks":76380155,"etf":0,"cash":0,"total":333620599},{"date":"2025-09-22","crypto":255493998,"stocks":76380155,"etf":0,"cash":0,"total":331874153},{"date":"2025-09-23","crypto":244000000,"stocks":77800000,"etf":0,"cash":0,"total":321800000},{"date":"2025-09-25","crypto":244947716,"stocks":77948444,"etf":0,"cash":0,"total":322896160},{"date":"2025-09-26","crypto":238293340,"stocks":77144442,"etf":0,"cash":0,"total":315437782},{"date":"2025-09-28","crypto":238256606,"stocks":77971183,"etf":0,"cash":0,"total":316227790},{"date":"2025-09-29","crypto":238194224,"stocks":77971183,"etf":0,"cash":0,"total":316165407},{"date":"2025-09-30","crypto":244000000,"stocks":78263012,"etf":0,"cash":0,"total":322263012},{"date":"2025-10-01","crypto":242226798,"stocks":78006793,"etf":0,"cash":0,"total":320233591},{"date":"2025-10-02","crypto":252834550,"stocks":81071282,"etf":0,"cash":0,"total":333905832},{"date":"2025-10-04","crypto":261589319,"stocks":77992066,"etf":0,"cash":0,"total":339581385},{"date":"2025-10-05","crypto":260872467,"stocks":76748829,"etf":0,"cash":0,"total":337621296},{"date":"2025-10-07","crypto":269793718,"stocks":79952830,"etf":0,"cash":0,"total":349746548},{"date":"2025-10-08","crypto":273946503,"stocks":79715014,"etf":0,"cash":0,"total":353661517},{"date":"2025-10-11","crypto":268114697,"stocks":77530498,"etf":0,"cash":0,"total":345645195},{"date":"2025-10-12","crypto":250141184,"stocks":74766497,"etf":0,"cash":0,"total":324907680},{"date":"2025-10-13","crypto":258403061,"stocks":74766497,"etf":0,"cash":0,"total":333169558},{"date":"2025-10-14","crypto":261170121,"stocks":76043194,"etf":0,"cash":0,"total":337213316},{"date":"2025-10-17","crypto":252176983,"stocks":77248427,"etf":0,"cash":0,"total":329425409},{"date":"2025-10-18","crypto":243010433,"stocks":76668848,"etf":0,"cash":0,"total":319679282},{"date":"2025-10-19","crypto":246248834,"stocks":77583688,"etf":0,"cash":0,"total":323832522},{"date":"2025-10-20","crypto":249614515,"stocks":77583688,"etf":0,"cash":0,"total":327198203},{"date":"2025-10-22","crypto":253585486,"stocks":80086240,"etf":0,"cash":0,"total":333671726},{"date":"2025-10-23","crypto":243253835,"stocks":77204223,"etf":0,"cash":0,"total":320458058},{"date":"2025-10-25","crypto":245180433,"stocks":79917691,"etf":0,"cash":0,"total":325098124},{"date":"2025-10-26","crypto":247065806,"stocks":79231119,"etf":0,"cash":0,"total":326296925},{"date":"2025-10-27","crypto":252738065,"stocks":79231119,"etf":0,"cash":0,"total":331969184},{"date":"2025-10-28","crypto":255540058,"stocks":82938996,"etf":0,"cash":0,"total":338479054},{"date":"2025-10-29","crypto":253277499,"stocks":85575152,"etf":0,"cash":0,"total":338852651},{"date":"2025-10-30","crypto":247876734,"stocks":85151972,"etf":0,"cash":0,"total":333028706},{"date":"2025-11-02","crypto":243250354,"stocks":85240405,"etf":0,"cash":0,"total":328490759},{"date":"2025-11-03","crypto":241927926,"stocks":85240405,"etf":0,"cash":0,"total":327168330},{"date":"2025-11-04","crypto":229533535,"stocks":87706351,"etf":0,"cash":0,"total":317239885},{"date":"2025-11-05","crypto":222777151,"stocks":84783723,"etf":0,"cash":0,"total":307560874},{"date":"2025-11-06","crypto":218767317,"stocks":81792095,"etf":0,"cash":0,"total":300559413},{"date":"2025-11-07","crypto":214190641,"stocks":81731664,"etf":0,"cash":0,"total":295922305},{"date":"2025-11-09","crypto":217439394,"stocks":78599576,"etf":0,"cash":0,"total":296038970},{"date":"2025-11-10","crypto":224629542,"stocks":78599576,"etf":0,"cash":0,"total":303229118},{"date":"2025-11-11","crypto":226822005,"stocks":82542132,"etf":0,"cash":0,"total":309364137},{"date":"2025-11-13","crypto":221475068,"stocks":79882786,"etf":0,"cash":0,"total":301357854},{"date":"2025-11-14","crypto":218278893,"stocks":75590780,"etf":0,"cash":0,"total":293869674},{"date":"2025-11-15","crypto":209466944,"stocks":74111884,"etf":0,"cash":0,"total":283578829},{"date":"2025-11-16","crypto":206729522,"stocks":73953935,"etf":0,"cash":0,"total":280683457},{"date":"2025-11-17","crypto":204168814,"stocks":73953935,"etf":0,"cash":0,"total":278122749},{"date":"2025-11-18","crypto":199686059,"stocks":75557721,"etf":0,"cash":0,"total":275243779},{"date":"2025-11-19","crypto":195984411,"stocks":72285241,"etf":0,"cash":0,"total":268269652},{"date":"2025-11-20","crypto":191546359,"stocks":73688267,"etf":0,"cash":0,"total":265234626},{"date":"2025-11-21","crypto":192196352,"stocks":76785112,"etf":0,"cash":0,"total":268981464},{"date":"2025-11-22","crypto":176450716,"stocks":68721162,"etf":0,"cash":0,"total":245171878},{"date":"2025-11-23","crypto":177219154,"stocks":69461094,"etf":0,"cash":0,"total":246680248},{"date":"2025-11-25","crypto":184681053,"stocks":73818694,"etf":0,"cash":0,"total":258499747},{"date":"2025-11-28","crypto":193054153,"stocks":75371160,"etf":0,"cash":0,"total":268425313},{"date":"2025-11-29","crypto":196418197,"stocks":76186523,"etf":0,"cash":0,"total":272604719},{"date":"2025-11-30","crypto":192041814,"stocks":76859680,"etf":0,"cash":0,"total":268901494},{"date":"2025-12-01","crypto":193442828,"stocks":76859269,"etf":0,"cash":0,"total":270302097},{"date":"2025-12-02","crypto":175603747,"stocks":76142987,"etf":0,"cash":0,"total":251746735},{"date":"2025-12-03","crypto":191577046,"stocks":77386467,"etf":0,"cash":0,"total":268963513},{"date":"2025-12-04","crypto":194345221,"stocks":78469910,"etf":0,"cash":0,"total":272815131},{"date":"2025-12-05","crypto":199204914,"stocks":81226709,"etf":0,"cash":0,"total":280431623},{"date":"2025-12-06","crypto":194659167,"stocks":82580920,"etf":0,"cash":0,"total":277240087},{"date":"2025-12-07","crypto":190617556,"stocks":82528045,"etf":0,"cash":0,"total":273145601},{"date":"2025-12-09","crypto":191992915,"stocks":80468288,"etf":0,"cash":0,"total":272461203},{"date":"2025-12-10","crypto":195090359,"stocks":81010756,"etf":0,"cash":0,"total":276101115},{"date":"2025-12-11","crypto":200330577,"stocks":80627182,"etf":0,"cash":0,"total":280957759},{"date":"2025-12-12","crypto":193962597,"stocks":80095650,"etf":0,"cash":0,"total":274058247},{"date":"2025-12-13","crypto":192532758,"stocks":81227507,"etf":0,"cash":0,"total":273760266},{"date":"2025-12-14","crypto":191933674,"stocks":82465307,"etf":0,"cash":0,"total":274398981},{"date":"2025-12-15","crypto":190001890,"stocks":82465307,"etf":0,"cash":0,"total":272467197},{"date":"2025-12-17","crypto":182871414,"stocks":84928165,"etf":0,"cash":0,"total":267799579},{"date":"2025-12-18","crypto":183084723,"stocks":85989828,"etf":0,"cash":0,"total":269074551},{"date":"2025-12-19","crypto":183817050,"stocks":86210796,"etf":0,"cash":0,"total":270027845},{"date":"2025-12-20","crypto":182988829,"stocks":86391334,"etf":0,"cash":0,"total":269380163},{"date":"2025-12-22","crypto":182369591,"stocks":86960371,"etf":0,"cash":0,"total":269329962},{"date":"2025-12-23","crypto":186483595,"stocks":88517847,"etf":0,"cash":0,"total":275001442},{"date":"2025-12-24","crypto":180961593,"stocks":88200761,"etf":0,"cash":0,"total":269162354},{"date":"2025-12-25","crypto":178969059,"stocks":85157980,"etf":0,"cash":0,"total":264127040},{"date":"2025-12-26","crypto":180778727,"stocks":85902472,"etf":0,"cash":0,"total":266681199},{"date":"2025-12-27","crypto":177276545,"stocks":84194548,"etf":0,"cash":0,"total":261471093},{"date":"2025-12-28","crypto":177945441,"stocks":83927177,"etf":0,"cash":0,"total":261872618},{"date":"2025-12-29","crypto":178864037,"stocks":83690851,"etf":0,"cash":0,"total":262554888},{"date":"2025-12-30","crypto":177871736,"stocks":81797633,"etf":0,"cash":0,"total":259669369},{"date":"2025-12-31","crypto":179404186,"stocks":80758267,"etf":0,"cash":0,"total":260162453},{"date":"2026-01-01","crypto":178932370,"stocks":79512199,"etf":0,"cash":0,"total":258444569},{"date":"2026-01-02","crypto":179215092,"stocks":78478468,"etf":0,"cash":0,"total":257693560},{"date":"2026-01-03","crypto":183727618,"stocks":78275072,"etf":0,"cash":0,"total":262002690},{"date":"2026-01-04","crypto":184903934,"stocks":75783090,"etf":0,"cash":0,"total":260687025},{"date":"2026-01-05","crypto":187442715,"stocks":75786784,"etf":0,"cash":0,"total":263229500},{"date":"2026-01-07","crypto":223125447,"stocks":79026594,"etf":0,"cash":0,"total":302152042},{"date":"2026-01-08","crypto":217426100,"stocks":78465773,"etf":0,"cash":0,"total":295891873},{"date":"2026-01-10","crypto":217524799,"stocks":79645831,"etf":0,"cash":0,"total":297170631},{"date":"2026-01-11","crypto":216630767,"stocks":79797494,"etf":0,"cash":0,"total":296428261},{"date":"2026-01-12","crypto":217358573,"stocks":79797494,"etf":0,"cash":0,"total":297156067},{"date":"2026-01-14","crypto":221558291,"stocks":81573574,"etf":0,"cash":0,"total":303131865},{"date":"2026-01-15","crypto":230479740,"stocks":80458672,"etf":0,"cash":0,"total":310938412},{"date":"2026-01-17","crypto":226774121,"stocks":78739099,"etf":0,"cash":0,"total":305513220},{"date":"2026-01-18","crypto":230031863,"stocks":78952516,"etf":0,"cash":0,"total":308984380},{"date":"2026-01-19","crypto":229776080,"stocks":78952516,"etf":0,"cash":0,"total":308728596},{"date":"2026-01-20","crypto":221654355,"stocks":78900833,"etf":0,"cash":0,"total":300555188},{"date":"2026-01-21","crypto":213465661,"stocks":77095246,"etf":0,"cash":0,"total":290560907},{"date":"2026-01-22","crypto":211710695,"stocks":75972934,"etf":0,"cash":0,"total":287683629},{"date":"2026-01-23","crypto":209814097,"stocks":76612556,"etf":0,"cash":0,"total":286426653},{"date":"2026-01-24","crypto":209085236,"stocks":78780361,"etf":0,"cash":0,"total":287865597},{"date":"2026-01-26","crypto":206386445,"stocks":78179545,"etf":0,"cash":0,"total":284565989},{"date":"2026-01-27","crypto":201967833,"stocks":76371272,"etf":0,"cash":0,"total":278339105},{"date":"2026-01-29","crypto":206159288,"stocks":75089987,"etf":0,"cash":0,"total":281249275},{"date":"2026-01-30","crypto":195711959,"stocks":71356345,"etf":0,"cash":0,"total":267068304},{"date":"2026-01-31","crypto":192175421,"stocks":72913928,"etf":0,"cash":0,"total":265089348},{"date":"2026-02-01","crypto":183770697,"stocks":72211385,"etf":0,"cash":0,"total":255982081},{"date":"2026-02-03","crypto":175247505,"stocks":71153762,"etf":0,"cash":0,"total":246401267},{"date":"2026-02-04","crypto":169342035,"stocks":71832501,"etf":0,"cash":0,"total":241174535},{"date":"2026-02-05","crypto":161467073,"stocks":69338026,"etf":0,"cash":0,"total":230805099},{"date":"2026-02-06","crypto":146046615,"stocks":64868823,"etf":0,"cash":0,"total":210915439},{"date":"2026-02-08","crypto":151814059,"stocks":67591588,"etf":0,"cash":0,"total":219405648},{"date":"2026-02-09","crypto":156224925,"stocks":67591588,"etf":0,"cash":0,"total":223816513},{"date":"2026-02-10","crypto":152042148,"stocks":68778390,"etf":0,"cash":0,"total":220820538},{"date":"2026-02-11","crypto":150319621,"stocks":70229109,"etf":0,"cash":0,"total":220548730},{"date":"2026-02-12","crypto":144399187,"stocks":68538765,"etf":0,"cash":0,"total":212937952},{"date":"2026-02-13","crypto":144366140,"stocks":67905627,"etf":0,"cash":0,"total":212271767},{"date":"2026-02-14","crypto":148880881,"stocks":66876294,"etf":0,"cash":0,"total":215757175},{"date":"2026-02-15","crypto":153220180,"stocks":67337568,"etf":0,"cash":0,"total":220557748},{"date":"2026-02-16","crypto":150365340,"stocks":67348066,"etf":0,"cash":0,"total":217713405},{"date":"2026-02-17","crypto":146801534,"stocks":67461094,"etf":0,"cash":0,"total":214262628},{"date":"2026-02-18","crypto":146588353,"stocks":65639567,"etf":0,"cash":0,"total":212227920},{"date":"2026-02-19","crypto":148482401,"stocks":68060795,"etf":0,"cash":0,"total":216543195},{"date":"2026-02-20","crypto":143766086,"stocks":67580953,"etf":0,"cash":0,"total":211347039},{"date":"2026-02-21","crypto":145388328,"stocks":67485672,"etf":0,"cash":0,"total":212874000},{"date":"2026-02-22","crypto":148002612,"stocks":67633883,"etf":0,"cash":0,"total":215636494},{"date":"2026-02-23","crypto":145315588,"stocks":67601091,"etf":0,"cash":0,"total":212916680},{"date":"2026-02-25","crypto":146104339,"stocks":65992815,"etf":0,"cash":0,"total":212097154},{"date":"2026-02-26","crypto":151194893,"stocks":65797049,"etf":0,"cash":0,"total":216991942},{"date":"2026-02-27","crypto":155048000,"stocks":67673387,"etf":0,"cash":0,"total":222721387},{"date":"2026-02-28","crypto":151986360,"stocks":67118293,"etf":0,"cash":0,"total":219104653},{"date":"2026-03-02","crypto":154776217,"stocks":66634847,"etf":0,"cash":0,"total":221411064},{"date":"2026-03-03","crypto":160581439,"stocks":69060686,"etf":0,"cash":0,"total":229642125},{"date":"2026-03-04","crypto":155724767,"stocks":67132446,"etf":0,"cash":0,"total":222857213},{"date":"2026-03-05","crypto":165187298,"stocks":69051136,"etf":0,"cash":0,"total":234238434},{"date":"2026-03-06","crypto":163265485,"stocks":70273544,"etf":0,"cash":0,"total":233539029},{"date":"2026-03-07","crypto":157187177,"stocks":69450428,"etf":0,"cash":0,"total":226637605},{"date":"2026-03-08","crypto":156020641,"stocks":69431639,"etf":0,"cash":0,"total":225452280},{"date":"2026-03-09","crypto":154004536,"stocks":69547222,"etf":0,"cash":0,"total":223551758},{"date":"2026-03-10","crypto":157513201,"stocks":68325655,"etf":0,"cash":0,"total":225838856},{"date":"2026-03-11","crypto":160924739,"stocks":69434857,"etf":0,"cash":0,"total":230359597},{"date":"2026-03-12","crypto":159104483,"stocks":70262884,"etf":0,"cash":0,"total":229367367},{"date":"2026-03-13","crypto":160916873,"stocks":70718223,"etf":0,"cash":0,"total":231635096},{"date":"2026-03-14","crypto":166052275,"stocks":70137294,"etf":0,"cash":0,"total":236189570},{"date":"2026-03-15","crypto":162868549,"stocks":69944394,"etf":0,"cash":0,"total":232812943},{"date":"2026-03-16","crypto":164357448,"stocks":69988716,"etf":0,"cash":0,"total":234346165},{"date":"2026-03-17","crypto":173609787,"stocks":71191552,"etf":0,"cash":0,"total":244801339},{"date":"2026-03-18","crypto":175666405,"stocks":71261785,"etf":0,"cash":0,"total":246928190},{"date":"2026-03-19","crypto":168508356,"stocks":71459999,"etf":0,"cash":0,"total":239968355},{"date":"2026-03-20","crypto":163369526,"stocks":68907407,"etf":0,"cash":0,"total":232276933},{"date":"2026-03-21","crypto":166338315,"stocks":68571250,"etf":0,"cash":0,"total":234909564},{"date":"2026-03-22","crypto":47575000,"stocks":25950000,"etf":10380000,"cash":0,"total":86500000},{"date":"2026-03-23","crypto":46310000,"stocks":25260000,"etf":10104000,"cash":0,"total":84200000},{"date":"2026-03-24","crypto":48400000,"stocks":26400000,"etf":10560000,"cash":0,"total":88000000},{"date":"2026-03-25","crypto":48015000,"stocks":26190000,"etf":10476000,"cash":0,"total":87300000},{"date":"2026-03-26","crypto":49005000,"stocks":26730000,"etf":10692000,"cash":0,"total":89100000},{"date":"2026-03-27","crypto":50325000,"stocks":27450000,"etf":10980000,"cash":0,"total":91500000},{"date":"2026-03-28","crypto":158447086,"stocks":43008372,"etf":24056675,"cash":0,"total":225512134},{"date":"2026-03-29","crypto":159912929,"stocks":42457450,"etf":24056675,"cash":0,"total":226427054},{"date":"2026-03-30","crypto":158219481,"stocks":42457450,"etf":24056675,"cash":0,"total":224733606},{"date":"2026-03-31","crypto":162201273,"stocks":42884227,"etf":23436430,"cash":0,"total":228521930},{"date":"2026-04-01","crypto":162214807,"stocks":42735699,"etf":22896545,"cash":0,"total":227847050},{"date":"2026-04-02","crypto":164418281,"stocks":44868385,"etf":23685805,"cash":0,"total":232972472},{"date":"2026-04-03","crypto":160666721,"stocks":43418078,"etf":23031725,"cash":0,"total":227116525},{"date":"2026-04-04","crypto":160709767,"stocks":42897300,"etf":23215640,"cash":0,"total":226822707},{"date":"2026-04-05","crypto":161501442,"stocks":42915474,"etf":23215640,"cash":0,"total":227632556},{"date":"2026-04-06","crypto":160261454,"stocks":42915474,"etf":23215640,"cash":0,"total":226392568},{"date":"2026-04-07","crypto":166261986,"stocks":42356934,"etf":23137715,"cash":0,"total":231756634},{"date":"2026-04-08","crypto":161056269,"stocks":40353664,"etf":22983170,"cash":0,"total":224393104},{"date":"2026-04-09","crypto":167473408,"stocks":40786554,"etf":23747600,"cash":0,"total":232007562},{"date":"2026-04-10","crypto":167057124,"stocks":38159120,"etf":23474990,"cash":0,"total":228691234},{"date":"2026-04-11","crypto":170747280,"stocks":38366091,"etf":23951145,"cash":0,"total":233064516},{"date":"2026-04-12","crypto":170497697,"stocks":38586509,"etf":23951145,"cash":0,"total":233035351},{"date":"2026-04-13","crypto":166291606,"stocks":38586509,"etf":23951145,"cash":0,"total":228829260},{"date":"2026-04-14","crypto":168354642,"stocks":39746070,"etf":24394170,"cash":0,"total":232494883},{"date":"2026-04-15","crypto":174478447,"stocks":40750996,"etf":24850410,"cash":0,"total":240079853},{"date":"2026-04-16","crypto":173873616,"stocks":42940407,"etf":24977415,"cash":0,"total":241791438},{"date":"2026-04-17","crypto":174140547,"stocks":43908057,"etf":25509370,"cash":0,"total":243557973},{"date":"2026-04-18","crypto":181496961,"stocks":45738930,"etf":25537960,"cash":0,"total":252773851},{"date":"2026-04-19","crypto":177684228,"stocks":45423621,"etf":25537960,"cash":0,"total":248645809},{"date":"2026-04-20","crypto":176837372,"stocks":45421454,"etf":25537960,"cash":0,"total":247796786},{"date":"2026-04-21","crypto":173851797,"stocks":44161722,"etf":25389280,"cash":0,"total":243402800},{"date":"2026-04-22","crypto":175191451,"stocks":44678073,"etf":25564400,"cash":0,"total":245433924},{"date":"2026-04-23","crypto":181910181,"stocks":45286128,"etf":25668830,"cash":0,"total":252865139},{"date":"2026-04-24","crypto":179071523,"stocks":43279070,"etf":25694870,"cash":0,"total":248045462},{"date":"2026-04-25","crypto":178681373,"stocks":42347857,"etf":26068245,"cash":0,"total":247097475},{"date":"2026-04-26","crypto":178930170,"stocks":42745387,"etf":26068245,"cash":0,"total":247743802},{"date":"2026-04-27","crypto":179858895,"stocks":42744519,"etf":26068245,"cash":0,"total":248671659},{"date":"2026-04-28","crypto":177368138,"stocks":41633907,"etf":26334505,"cash":0,"total":245336549},{"date":"2026-04-29","crypto":174729466,"stocks":42298204,"etf":26140240,"cash":0,"total":243167911},{"date":"2026-04-30","crypto":175607277,"stocks":41587957,"etf":26807100,"cash":0,"total":244002334},{"date":"2026-05-01","crypto":174688227,"stocks":42398207,"etf":26472135,"cash":0,"total":243558569},{"date":"2026-05-02","crypto":177599936,"stocks":43994663,"etf":26472135,"cash":0,"total":248066734},{"date":"2026-05-03","crypto":177806571,"stocks":44055657,"etf":26472135,"cash":0,"total":248334363},{"date":"2026-05-04","crypto":178740086,"stocks":44127819,"etf":26472135,"cash":0,"total":249340040},{"date":"2026-05-05","crypto":180625034,"stocks":44784172,"etf":27406620,"cash":0,"total":252815826},{"date":"2026-05-06","crypto":183443571,"stocks":43601645,"etf":27406620,"cash":0,"total":254451836},{"date":"2026-05-07","crypto":181817047,"stocks":42523679,"etf":27552715,"cash":0,"total":251893441},{"date":"2026-05-08","crypto":178775059,"stocks":45060613,"etf":27888345,"cash":0,"total":251724018},{"date":"2026-05-09","crypto":178870702,"stocks":46751079,"etf":27982260,"cash":0,"total":253604041},{"date":"2026-05-10","crypto":180484776,"stocks":46939009,"etf":27982260,"cash":0,"total":255406045},{"date":"2026-05-11","crypto":182174756,"stocks":46939009,"etf":27982260,"cash":0,"total":257096025},{"date":"2026-05-12","crypto":182746696,"stocks":46950994,"etf":28451920,"cash":0,"total":258149610},{"date":"2026-05-13","crypto":181007082,"stocks":56123566,"etf":29321425,"cash":0,"total":266452073},{"date":"2026-05-14","crypto":179242320,"stocks":57771237,"etf":29628000,"cash":0,"total":266641556},{"date":"2026-05-15","crypto":181183116,"stocks":57612664,"etf":29427965,"cash":0,"total":268223744},{"date":"2026-05-16","crypto":177408344,"stocks":55389832,"etf":28338385,"cash":0,"total":261136561},{"date":"2026-05-17","crypto":174598940,"stocks":55150161,"etf":28338385,"cash":0,"total":258087486},{"date":"2026-05-18","crypto":174896701,"stocks":55155819,"etf":28338385,"cash":0,"total":258390904},{"date":"2026-05-19","crypto":169404533,"stocks":53690603,"etf":28155065,"cash":0,"total":251250201},{"date":"2026-05-20","crypto":170064844,"stocks":52746261,"etf":27835140,"cash":0,"total":250646245},{"date":"2026-05-21","crypto":171083051,"stocks":54212785,"etf":27501875,"cash":0,"total":252797711},{"date":"2026-05-22","crypto":171239104,"stocks":55267912,"etf":28398010,"cash":0,"total":254905026}];
 
@@ -193,7 +208,7 @@ const FB_CFG={
 
 let db=null, ROOM=localStorage.getItem('asset_room'), connected=false;
 let live={crypto:[...SEED_CRYPTO],stocks:[...SEED_STOCKS],etf:[...SEED_ETF],cash:[...SEED_CASH],history:[...SEED_HISTORY]};
-let prices={}, exRate=1517;
+let prices={}, exRate=null;
 let S={view:'dashboard',manageType:'crypto',showForm:false,editId:null,loading:false,chartPeriod:'1M'};
 
 // ── 포맷 ─────────────────────────────────────────────────────
@@ -219,12 +234,12 @@ function calcAssetVal(item, type){
   }else if(type==='stock'){
     if(item.manual) return null;
     const p=prices[item.ticker];
-    return p!=null ? item.qty*p*exRate : null;
+    return p!=null && exRate!=null ? item.qty*p*exRate : null;
   }else if(type==='etf'){
     if(item.manual) return null;
     const p=prices[item.ticker];
     if(p!=null){
-      return item.currency==='USD' ? item.qty*p*exRate : item.qty*p;
+      return item.currency==='USD' ? (exRate!=null?item.qty*p*exRate:null) : item.qty*p;
     }
     return null;
   }
@@ -253,6 +268,66 @@ function fetchWithTimeout(url, ms){
 
 let priceChanges = {}; // {ticker: changePercent}
 let autoRefreshId = null;
+let freshKeys = new Set(); // 이번 updatePrices()에서 "실시간" 조회에 성공한 market/ticker
+let priceUpdateInFlight = false; // 화면 로딩 표시와 분리한 중복 조회 잠금
+let priceUpdateSeq = 0;
+const PRICE_CACHE_KEY=`asset-price-cache-v2:${ROOM||'default'}`;
+
+// Firebase/외부 API가 잠시 실패해도 직전에 정상 표시됐던 가격은 지우지 않는다.
+// 숫자 시세만 복원해 메타데이터(source 등)가 prices에 섞이지 않게 한다.
+function mergePriceCache(payload){
+  if(!payload||typeof payload!=='object') return;
+  Object.entries(payload).forEach(([key,value])=>{
+    if(['changes','exRate','updatedAt','source'].includes(key)) return;
+    const n=Number(value);
+    if(Number.isFinite(n)&&n>0) prices[key]=n;
+  });
+  const fx=Number(payload.exRate);
+  if(Number.isFinite(fx)&&fx>0) exRate=fx;
+  if(payload.changes&&typeof payload.changes==='object') Object.assign(priceChanges,payload.changes);
+}
+function restoreLocalPriceCache(){
+  try{mergePriceCache(JSON.parse(localStorage.getItem(PRICE_CACHE_KEY)||'null'));}catch(e){}
+}
+function saveLocalPriceCache(updatedAt=new Date().toISOString()){
+  const numeric={};
+  Object.entries(prices).forEach(([key,value])=>{
+    const n=Number(value);
+    if(Number.isFinite(n)&&n>0) numeric[key]=n;
+  });
+  try{localStorage.setItem(PRICE_CACHE_KEY,JSON.stringify({...numeric,exRate,changes:priceChanges,updatedAt}));}catch(e){}
+}
+restoreLocalPriceCache();
+
+// 기록 품질 점수 — 클수록 신뢰도 높음. 부실한 값이 좋은 값을 덮지 못하게 하는 데 사용.
+// complete(모두 실시간) > finalized(서버 확정) > stale 개수 적을수록
+function recRank(r){
+  if(!r) return -1;
+  const finalized = r.provisional===false;
+  const staleN = Array.isArray(r.stale) ? r.stale.length : 0;
+  return (r.complete?2:0) + (finalized?1:0) - staleN*0.001;
+}
+function todayStr(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+// 전일 대비 기준이 될 "직전 날짜의 신뢰 가능한 기록"
+function prevDayRecord(){
+  const ds=todayStr();
+  const hist=live.history||[];
+  for(let i=hist.length-1;i>=0;i--){ if(hist[i].date!==ds && hist[i].complete!==false) return hist[i]; }
+  for(let i=hist.length-1;i>=0;i--){ if(hist[i].date!==ds) return hist[i]; }
+  return null;
+}
+// history.total은 과거 버전에서 현금 포함 여부가 달랐다.
+// 그래프와 변동 계산은 구성 필드로 재계산해 항상 투자자산만 사용한다.
+function histInvest(h){
+  if(!h) return 0;
+  const parts=[h.crypto,h.stocks,h.etf];
+  return parts.some(v=>Number.isFinite(Number(v)))
+    ? parts.reduce((s,v)=>s+(Number(v)||0),0)
+    : (Number(h.total)||0);
+}
 
 async function fetchSingleYF(ticker){
   const endpoints=[
@@ -261,7 +336,7 @@ async function fetchSingleYF(ticker){
   ];
   const proxyFns=[
     u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-    u=>`https://corsproxy.io/?${encodeURIComponent(u)}`,
+    u=>`https://corsproxy.io/?url=${encodeURIComponent(u)}`,
   ];
   const parse=(d)=>{
     const meta=d?.chart?.result?.[0]?.meta;
@@ -272,26 +347,70 @@ async function fetchSingleYF(ticker){
     }
     return null;
   };
-  for(const url of endpoints){
-    try{const r=await fetchWithTimeout(url,4000);if(r.ok){const v=parse(await r.json());if(v)return v;}}catch(e){}
-    for(const fn of proxyFns){
-      try{
-        const r=await fetchWithTimeout(fn(url),7000);
-        if(r.ok){const v=parse(JSON.parse(await r.text()));if(v)return v;}
-      }catch(e){}
-    }
-  }
+  const attempt=async(url,ms)=>{
+    const r=await fetchWithTimeout(url,ms);
+    if(!r.ok) throw new Error('http');
+    const v=parse(await r.json());
+    if(!v) throw new Error('no-price');
+    return v;
+  };
+  // Yahoo 2개 서버를 동시에 시도. 둘 다 실패하면 프록시 4개를 동시 시도한다.
+  // 기존 순차 조회의 최악 30초 이상 대기를 약 6~7초 내로 줄인다.
+  try{return await Promise.any(endpoints.map(url=>attempt(url,1800)));}catch(e){}
+  const proxyUrls=endpoints.flatMap(url=>proxyFns.map(fn=>fn(url)));
+  try{return await Promise.any(proxyUrls.map(url=>attempt(url,4500)));}catch(e){}
   return null;
+}
+
+// 네이버 해외주식 폴링: 종목별 Yahoo 호출 대신 주식/ETF 각 1회로 묶어 조회.
+// 무료 프록시 하나가 느려도 다른 경로가 먼저 성공하면 즉시 반영한다.
+async function fetchNaverUsBatch(items){
+  const known=items.filter(item=>NAVER_US[item.ticker]);
+  const loadGroup=async(type)=>{
+    const group=known.filter(item=>NAVER_US[item.ticker].type===type);
+    if(!group.length) return;
+    const codes=group.map(item=>NAVER_US[item.ticker].code).join(',');
+    const target=`https://polling.finance.naver.com/api/realtime/worldstock/${type}/${codes}`;
+    const urls=[
+      target,
+      `https://corsproxy.io/?url=${encodeURIComponent(target)}`,
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`,
+    ];
+    const attempt=async url=>{
+      const r=await fetchWithTimeout(url,5000);
+      if(!r.ok) throw new Error('http');
+      const d=await r.json();
+      if(!Array.isArray(d?.datas)||!d.datas.length) throw new Error('no-data');
+      return d.datas;
+    };
+    let rows;
+    try{rows=await Promise.any(urls.map(attempt));}catch(e){return;}
+    rows.forEach(row=>{
+      const item=group.find(i=>NAVER_US[i.ticker].code===row.reutersCode);
+      const p=Number(row.closePriceRaw||String(row.closePrice||'').replace(/,/g,''));
+      if(item&&p>0){
+        prices[item.ticker]=p;
+        freshKeys.add(item.ticker);
+        const pct=Number(row.fluctuationsRatioRaw||row.fluctuationsRatio);
+        if(Number.isFinite(pct)) priceChanges[item.ticker]=row.compareToPreviousPrice?.code==='5'?-Math.abs(pct):Math.abs(pct);
+      }
+    });
+    render();
+  };
+  await Promise.allSettled([loadGroup('stock'),loadGroup('etf')]);
 }
 
 function startAutoRefresh(){
   if(autoRefreshId) clearInterval(autoRefreshId);
-  autoRefreshId=setInterval(()=>{if(!S.showForm&&!S.loading) updatePrices();}, 5*60*1000);
+  autoRefreshId=setInterval(()=>{if(!S.showForm&&!priceUpdateInFlight) updatePrices();}, 5*60*1000);
 }
 
 async function updatePrices(forceRecord=false){
-  if(S.loading)return;
+  if(priceUpdateInFlight)return;
+  priceUpdateInFlight=true;
+  const runId=++priceUpdateSeq;
   S.loading=true;
+  freshKeys=new Set(); // 이번 회차에 실제로 갱신된 시세만 추적
   const lu=document.getElementById('lastUpdate');
   if(lu) lu.textContent='업데이트 중...';
   render();
@@ -306,6 +425,7 @@ async function updatePrices(forceRecord=false){
       if(Array.isArray(d)&&d.length){
         d.forEach(item=>{
           prices[item.market]=item.trade_price;
+          freshKeys.add(item.market);
           if(item.signed_change_rate!=null) priceChanges[item.market]=item.signed_change_rate*100;
         });
         coinOk=true;
@@ -323,6 +443,7 @@ async function updatePrices(forceRecord=false){
           const sym=c.market.replace('KRW-','');
           if(d.data[sym]?.closing_price){
             prices[c.market]=parseFloat(d.data[sym].closing_price);
+            freshKeys.add(c.market);
             if(d.data[sym].fluctate_rate_24H) priceChanges[c.market]=parseFloat(d.data[sym].fluctate_rate_24H);
             coinOk=true;
           }
@@ -342,103 +463,141 @@ async function updatePrices(forceRecord=false){
   }
 
   // 3. 국내 ETF: 네이버 금융 API (더 신뢰성 높음)
-  const krEtfs=live.etf.filter(e=>!e.manual && e.ticker && e.ticker.endsWith('.KS'));
-  const usdEtfs=live.etf.filter(e=>!e.manual && e.ticker && !e.ticker.endsWith('.KS'));
+  const krEtfs=live.etf.filter(e=>!e.manual && e.ticker && (e.ticker.endsWith('.KS')||e.ticker.endsWith('.KQ')));
   const krStocks=live.stocks.filter(s=>!s.manual && s.ticker && s.ticker.endsWith('.KS'));
-  const usdStocks=live.stocks.filter(s=>!s.manual && s.ticker && !s.ticker.endsWith('.KS') && s.ticker!=='3TSL.L');
-  const otherTickers=live.stocks.filter(s=>!s.manual && s.ticker && !s.ticker.endsWith('.KS')).map(s=>s.ticker);
+  const foreignItems=live.stocks.filter(s=>!s.manual && s.ticker && !s.ticker.endsWith('.KS'));
+  const unknownForeign=foreignItems.filter(item=>!NAVER_US[item.ticker]);
 
-  // 코인/환율 완료 후 먼저 화면 업데이트
+  // 코인/환율은 즉시 표시하고 로딩 UI를 풀어준다.
+  // priceUpdateInFlight는 계속 true이므로 남은 주식 조회와 중복 실행되지 않는다.
   S.loading=false;
   render();
 
-  // 네이버 금융으로 국내 ETF/주식 가격 조회
-  const naverFetch=async(code, ticker)=>{
-    const urls=[
-      `https://polling.finance.naver.com/api/realtime/domestic/stock/${code}`,
-      `https://m.stock.naver.com/api/stock/${code}/basic`,
-    ];
-    for(const url of urls){
-      try{
-        const r=await fetchWithTimeout(url,5000);
-        if(r.ok){
-          const d=await r.json();
-          const raw=d?.datas?.[0]||d;
-          const cp=raw?.closePrice||raw?.currentPrice||raw?.stockEndPrice;
-          if(cp){
-            const p=parseFloat(String(cp).replace(/,/g,''));
-            if(p>0){
-              prices[ticker]=p;
-              render();
-              return true;
-            }
-          }
+  // 국내 ETF/주식은 JSONP 한 번으로 묶어서 조회한다.
+  // file://에서도 CORS 프록시 없이 작동하며, 개별 API 여러 번보다 빠르다.
+  const naverBatchFetch=(items)=>new Promise(resolve=>{
+    if(!items.length){resolve(new Set());return;}
+    const cb=`__naverPrice_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const script=document.createElement('script');
+    const done=new Set();
+    let timer;
+    const cleanup=()=>{clearTimeout(timer);script.remove();try{delete window[cb];}catch(e){window[cb]=undefined;}};
+    const finish=()=>{cleanup();render();resolve(done);};
+    window[cb]=(payload)=>{
+      const rows=(payload?.result?.areas||[]).flatMap(area=>area.datas||[]);
+      rows.forEach(row=>{
+        const item=items.find(i=>i.ticker.replace(/\.(KS|KQ)$/,'')===String(row.cd));
+        const p=Number(row.nv);
+        if(item&&p>0){
+          prices[item.ticker]=p;
+          freshKeys.add(item.ticker);
+          done.add(item.ticker);
+          if(row.cr!=null) priceChanges[item.ticker]=(String(row.rf)==='5'?-1:1)*Math.abs(Number(row.cr));
         }
-      }catch(e){}
-    }
-    return false;
-  };
-
-  // 국내 ETF 네이버로 먼저 시도
-  const naverPromises=[...krEtfs,...krStocks].map(item=>{
-    const code=item.ticker.replace('.KS','');
-    return naverFetch(code, item.ticker);
+      });
+      finish();
+    };
+    script.onerror=finish;
+    timer=setTimeout(finish,3500);
+    const codes=items.map(i=>i.ticker.replace(/\.(KS|KQ)$/,'')).join(',');
+    script.src=`https://polling.finance.naver.com/api/realtime?query=${encodeURIComponent('SERVICE_ITEM:'+codes)}&_callback=${cb}`;
+    document.head.appendChild(script);
   });
 
-  // 미국 주식 Yahoo Finance 병렬 조회
-  const yfPromises=otherTickers.map(ticker=>
-    fetchSingleYF(ticker).then(result=>{
-      if(result){prices[ticker]=result.price;if(result.pct!=null)priceChanges[ticker]=result.pct;render();}
+  const domesticItems=[...krEtfs,...krStocks];
+  const naverPromise=naverBatchFetch(domesticItems);
+
+  // 해외주식은 네이버 일괄 조회가 1순위. 매핑 없는 신규 티커만 Yahoo를 바로 시도한다.
+  const naverUsPromise=fetchNaverUsBatch(foreignItems);
+  const yfPromises=unknownForeign.map(item=>
+    fetchSingleYF(item.ticker).then(result=>{
+      if(result){prices[item.ticker]=result.price;freshKeys.add(item.ticker);if(result.pct!=null)priceChanges[item.ticker]=result.pct;render();}
     }).catch(()=>{})
   );
 
-  await Promise.allSettled([...naverPromises,...yfPromises]);
+  await Promise.allSettled([naverPromise,naverUsPromise,...yfPromises]);
 
   // 네이버 실패한 ETF는 Yahoo Finance로 재시도 (.KS와 .KQ 모두 시도)
-  const naverFailed=[...krEtfs,...krStocks].filter(i=>prices[i.ticker]==null);
+  const naverFailed=[...krEtfs,...krStocks].filter(i=>!freshKeys.has(i.ticker));
   if(naverFailed.length){
     await Promise.allSettled(naverFailed.map(async item=>{
       // .KS 시도
       let result=await fetchSingleYF(item.ticker).catch(()=>null);
-      if(result){prices[item.ticker]=result.price;if(result.pct!=null)priceChanges[item.ticker]=result.pct;render();return;}
+      if(result){prices[item.ticker]=result.price;freshKeys.add(item.ticker);if(result.pct!=null)priceChanges[item.ticker]=result.pct;render();return;}
       // .KQ로도 시도 (KOSDAQ)
       const kqTicker=item.ticker.replace('.KS','.KQ');
       result=await fetchSingleYF(kqTicker).catch(()=>null);
-      if(result){prices[item.ticker]=result.price;if(result.pct!=null)priceChanges[item.ticker]=result.pct;render();}
+      if(result){prices[item.ticker]=result.price;freshKeys.add(item.ticker);if(result.pct!=null)priceChanges[item.ticker]=result.pct;render();}
     }));
+  }
+
+  // 네이버 해외 일괄 조회에서 누락된 종목만 Yahoo로 최종 보완한다.
+  const foreignFailed=foreignItems.filter(item=>!freshKeys.has(item.ticker));
+  if(foreignFailed.length){
+    await Promise.allSettled(foreignFailed.map(item=>fetchSingleYF(item.ticker).then(result=>{
+      if(result){prices[item.ticker]=result.price;freshKeys.add(item.ticker);if(result.pct!=null)priceChanges[item.ticker]=result.pct;render();}
+    }).catch(()=>{})));
   }
 
   const now=new Date();
   const timeStr=`${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
-  if(db&&ROOM) db.ref(`assets/${ROOM}/prices`).set({...prices,exRate,changes:priceChanges,updatedAt:now.toISOString()});
+  saveLocalPriceCache(now.toISOString());
+  // 이번 조회에서 성공한 필드만 갱신한다. 부분 실패가 서버의 마지막 정상가를
+  // 통째로 지우는 기존 set() 동작을 막는다.
+  if(db&&ROOM){
+    const patch={changes:priceChanges,updatedAt:now.toISOString(),source:'browser'};
+    freshKeys.forEach(key=>{if(Number.isFinite(Number(prices[key]))) patch[key]=Number(prices[key]);});
+    if(fxOk&&Number.isFinite(Number(exRate))) patch.exRate=Number(exRate);
+    db.ref(`assets/${ROOM}/prices`).update(patch);
+  }
 
-  // 오늘 자산 기록 — 코인 로드 완료 + 주식/ETF 80% 이상 로드됐을 때만
+  // 오늘 자산 기록 (하이브리드 임시값)
+  //  · 실패한 종목은 마지막 정상가(prices에 남아있는 이전 값)로 폴백 → 0으로 사라지지 않음
+  //  · 모든 자산에 값이 있고(폴백 포함) 최소 1개는 실시간일 때만 기록
+  //  · complete/stale 품질 메타를 남기고, 더 좋은 기록을 부실값으로 덮지 않음
+  //  · provisional:true — 밤에 서버(record.js)가 최종 확정값으로 덮어씀
   function tryRecord(force=false){
-    const t2=calcTotals();
+    if(!coinOk) return false; // 코인 미로드면 강제 새로고침이어도 기록 금지
     const items=[...live.stocks,...live.etf].filter(i=>!i.manual);
-    const loaded=items.filter(i=>prices[i.ticker]!=null).length;
-    const ratio=items.length===0?1:loaded/items.length;
-    if(t2.hasPrice && coinOk && (ratio>=0.7 || force)){
-      const now2=new Date();
-      const ds=`${now2.getFullYear()}-${String(now2.getMonth()+1).padStart(2,'0')}-${String(now2.getDate()).padStart(2,'0')}`;
-      const ha=[...(live.history||[])];
-      const ei=ha.findIndex(h=>h.date===ds);
-      if(ei<0||force){
-        const t3=calcTotals();
-        const entry={date:ds,total:Math.round(t3.total),crypto:Math.round(t3.crypto),stocks:Math.round(t3.stocks),etf:Math.round(t3.etf),cash:Math.round(t3.cash)};
-        if(ei>=0) ha[ei]=entry; else ha.push(entry);
-        ha.sort((a,b)=>a.date>b.date?1:-1);
-        fbSave('history',ha);
-        return true;
-      }
-    }
-    return false;
+    const needed=[...live.crypto.map(c=>c.market), ...items.map(i=>i.ticker)];
+    const needsFx=items.some(i=>i.currency==='USD') || live.stocks.some(i=>!i.manual&&i.currency!=='KRW');
+    const missing=needed.filter(k=>prices[k]==null);      // 실시간도 폴백도 없는 자산
+    if(needsFx&&exRate==null) missing.push('USD/KRW');
+    const fresh=needed.filter(k=>freshKeys.has(k));         // 이번에 실시간 갱신됨
+    const stale=needed.filter(k=>prices[k]!=null && !freshKeys.has(k)); // 폴백(과거값) 사용
+    if(needsFx&&exRate!=null&&!fxOk) stale.push('USD/KRW');
+    if(missing.length) return false;                         // 값 없는 자산은 절대 기록하지 않음
+    if(!fresh.length) return false;                          // 전부 낡은 값이면 보류(유령 기록 방지)
+
+    const t3=calcTotals();
+    if(!t3.hasPrice) return false;
+    const ds=todayStr();
+    const entry={
+      date:ds,
+      total:Math.round(t3.crypto+t3.stocks+t3.etf),crypto:Math.round(t3.crypto),
+      stocks:Math.round(t3.stocks),etf:Math.round(t3.etf),cash:Math.round(t3.cash),
+      complete: missing.length===0 && stale.length===0,
+      stale, source:'app', provisional:true, ts:new Date().toISOString()
+    };
+    const ha=[...(live.history||[])];
+    const ei=ha.findIndex(h=>h.date===ds);
+    if(ei>=0){
+      const old=ha[ei];
+      // 서버 확정값이 같거나 더 좋으면 절대 건드리지 않음
+      if(old.provisional===false && recRank(old)>=recRank(entry)) return false;
+      // 그 외엔 더 나빠지는 덮어쓰기 금지(수동 새로고침 force 제외)
+      if(!force && recRank(old)>recRank(entry)) return false;
+      ha[ei]=entry;
+    }else ha.push(entry);
+    ha.sort((a,b)=>a.date>b.date?1:-1);
+    fbSave('history',ha);
+    return true;
   }
   tryRecord(forceRecord);
 
   const lu2=document.getElementById('lastUpdate');
   const items=[...live.stocks,...live.etf].filter(i=>!i.manual);
-  const loaded=items.filter(i=>prices[i.ticker]!=null).length;
+  const loaded=items.filter(i=>freshKeys.has(i.ticker)).length;
   if(lu2){
     const parts=[];
     if(coinOk) parts.push('코인✓');
@@ -446,32 +605,34 @@ async function updatePrices(forceRecord=false){
     parts.push(`주식 ${loaded}/${items.length}${loaded===items.length?'✓':'⋯'}`);
     lu2.textContent=`${timeStr} ${parts.join(' ')}`;
   }
+  priceUpdateInFlight=false;
   render();
   startAutoRefresh();
 
-  // 15초 후 미로드 티커 재시도 → 성공하면 기록 업데이트
+  // 5초 후 미로드 티커만 일괄 재시도 → 성공하면 기록 업데이트
   setTimeout(async ()=>{
-    const missing=[...live.stocks,...live.etf].filter(i=>!i.manual&&prices[i.ticker]==null);
+    if(runId!==priceUpdateSeq) return; // 더 최근 업데이트가 시작됐으면 이전 재시도는 폐기
+    // 캐시 가격이 있어도 이번 회차에 실시간 조회가 실패했으면 재시도한다.
+    const missing=[...live.stocks,...live.etf].filter(i=>!i.manual&&!freshKeys.has(i.ticker));
     if(!missing.length) return;
-    await Promise.allSettled(missing.map(item=>{
-      const code=item.ticker.replace('.KS','').replace('.KQ','');
-      if(item.ticker.endsWith('.KS')||item.ticker.endsWith('.KQ')){
-        return naverFetch(code, item.ticker)
-          .then(ok=>{ if(!ok) return fetchSingleYF(item.ticker).then(r=>{if(r){prices[item.ticker]=r.price;if(r.pct!=null)priceChanges[item.ticker]=r.pct;}});})
-          .catch(()=>{});
-      }
-      return fetchSingleYF(item.ticker).then(r=>{if(r){prices[item.ticker]=r.price;if(r.pct!=null)priceChanges[item.ticker]=r.pct;}}).catch(()=>{});
-    }));
+    const domestic=missing.filter(item=>item.ticker.endsWith('.KS')||item.ticker.endsWith('.KQ'));
+    await naverBatchFetch(domestic);
+    const foreign=missing.filter(item=>!item.ticker.endsWith('.KS')&&!item.ticker.endsWith('.KQ'));
+    await fetchNaverUsBatch(foreign);
+    const stillMissing=missing.filter(item=>!freshKeys.has(item.ticker));
+    await Promise.allSettled(stillMissing.map(item=>
+      fetchSingleYF(item.ticker).then(r=>{if(r){prices[item.ticker]=r.price;freshKeys.add(item.ticker);if(r.pct!=null)priceChanges[item.ticker]=r.pct;}}).catch(()=>{})
+    ));
     // 재시도 후 기록 시도 (아직 오늘 기록 없으면)
     tryRecord(false);
     render();
     const lu3=document.getElementById('lastUpdate');
     if(lu3){
       const it=[...live.stocks,...live.etf].filter(i=>!i.manual);
-      const ld=it.filter(i=>prices[i.ticker]!=null).length;
+      const ld=it.filter(i=>freshKeys.has(i.ticker)).length;
       lu3.textContent=lu3.textContent.replace(/주식 \d+\/\d+[✓⋯]/,`주식 ${ld}/${it.length}${ld===it.length?'✓':'⚠'}`);
     }
-  }, 15000);
+  }, 5000);
 }
 
 
@@ -500,13 +661,15 @@ db=firebase.database();
         if(v){
           live.crypto=v.crypto||SEED_CRYPTO;
           live.stocks=v.stocks||SEED_STOCKS;
-          live.etf=v.etf||SEED_ETF;
+          const rawEtf=v.etf||SEED_ETF;
+          live.etf=rawEtf.map(item=>ETF_TICKER_FIX[item.ticker]?{...item,ticker:ETF_TICKER_FIX[item.ticker]}:item);
+          // 기존 Firebase의 잘못된 ETF 코드만 수량/매입가를 유지한 채 1회 교정한다.
+          if(live.etf.some((item,i)=>item.ticker!==rawEtf[i]?.ticker)) db.ref(`assets/${ROOM}/etf`).set(live.etf);
           live.cash=v.cash||SEED_CASH;
           live.history=v.history||[];
           if(v.prices){
-            Object.assign(prices,v.prices);
-            if(v.prices.exRate) exRate=v.prices.exRate;
-            if(v.prices.changes) Object.assign(priceChanges,v.prices.changes);
+            mergePriceCache(v.prices);
+            saveLocalPriceCache(v.prices.updatedAt);
           }
           if(!S.showForm) render();
           // Firebase 데이터 첫 로드 완료 후에 가격 업데이트
@@ -532,10 +695,11 @@ function render(){
   const tc=document.getElementById('totalChange');
   if(tv) tv.textContent=t.hasPrice?fmtW(t.crypto+t.stocks+t.etf+t.cash):'가격 업데이트 필요';
   if(tc){
-    const hist=live.history;
-    if(hist&&hist.length&&t.hasPrice){
+    const prev=prevDayRecord();
+    if(prev&&t.hasPrice){
       const cashTotal=live.cash.reduce((s,i)=>s+(Number(i.amount)||0),0);
-      const yesterday=hist[hist.length-1].total+cashTotal;
+      // 기록마다 total의 현금 포함 여부가 달라, 투자분(코인·주식·ETF)만 비교하고 현금은 현재값으로 통일
+      const yesterday=histInvest(prev)+cashTotal;
       const nowTotal=t.crypto+t.stocks+t.etf+t.cash;
       const diff=nowTotal-yesterday;
       const pct=(diff/yesterday*100).toFixed(1);
@@ -642,7 +806,7 @@ function renderDashboard(t){
   h+=`</div></div>`;
 
   // 환율
-  h+=`<div style="text-align:right;font-size:11px;color:var(--text3);padding:0 2px">환율: ${exRate.toLocaleString()} KRW/USD</div>`;
+  h+=`<div style="text-align:right;font-size:11px;color:var(--text3);padding:0 2px">환율: ${exRate!=null?exRate.toLocaleString():'—'} KRW/USD</div>`;
   return h;
 }
 
@@ -671,15 +835,18 @@ function renderHistory(t){
   h+=`<div class="hist-list">`;
   recent.forEach((item,i)=>{
     const prev=recent[i+1];
-    const diff=prev?item.total-prev.total:0;
-    const pct=prev&&prev.total?((diff/prev.total)*100).toFixed(1):'';
+    const itemTotal=histInvest(item);
+    const prevTotal=histInvest(prev);
+    const diff=prev?itemTotal-prevTotal:0;
+    const pct=prev&&prevTotal?((diff/prevTotal)*100).toFixed(1):'';
+    const qualityLabel=item.complete===false?'보정':item.provisional===true?'오늘':'';
     h+=`<div class="hist-item">
       <div>
-        <div class="hist-date">${item.date}</div>
+        <div class="hist-date">${item.date}${qualityLabel?` <span title="${item.complete===false?'일부 시세를 마지막 정상값으로 보정함':'서버 확정 전 오늘의 실시간 기록'}" style="font-size:9px;color:var(--gold);border:1px solid var(--gold);border-radius:6px;padding:0 4px;vertical-align:middle">${qualityLabel}</span>`:''}</div>
         ${prev?`<div class="hist-change ${diff>=0?'up':'dn'}">${diff>=0?'▲':'▼'} ${fmtWShort(Math.abs(diff))} (${pct}%)</div>`:'<div class="hist-change">—</div>'}
       </div>
       <div style="text-align:right">
-        <div class="hist-total">${fmtWShort(item.total)}</div>
+        <div class="hist-total">${fmtWShort(itemTotal)}</div>
         <div style="font-size:10px;color:var(--text3)">코인 ${fmtS(item.crypto)} / 주식 ${fmtS(item.stocks+item.etf)}</div>
       </div>
     </div>`;
@@ -689,6 +856,7 @@ function renderHistory(t){
 }
 
 function renderChart(hist, period, type){
+  hist=hist.map(h=>({...h,total:type==='total' ? histInvest(h)+(Number(h.cash)||0) : histInvest(h)}));
   const now=new Date();
   let filtered=[...hist];
   const cutoff=new Date(now);
@@ -828,7 +996,7 @@ function renderManage(){
         const p=prices[item.ticker];
         sub=`${item.ticker} · ${item.qty.toLocaleString()}주`;
         if(item.currency==='KRW') priceStr=p!=null?p.toLocaleString()+'원':'—';
-        else priceStr=p!=null?'$'+p.toFixed(2)+' ('+Math.round(p*exRate).toLocaleString()+'원)':'—';
+        else priceStr=p!=null?'$'+p.toFixed(2)+(exRate!=null?' ('+Math.round(p*exRate).toLocaleString()+'원)':''):'—';
       }
       h+=`<div class="manage-item">
         <div class="mi-info" style="flex:1;min-width:0">
@@ -856,7 +1024,7 @@ function renderTotalAssets(t){
   const invest=t.crypto+t.stocks+t.etf;
   const grandTotal=invest+cashTotal;
   const hist=[...live.history].sort((a,b)=>a.date>b.date?1:-1);
-  const histWithCash=hist.map(h=>({...h,total:h.total+cashTotal}));
+  const histWithCash=hist.map(h=>({...h,total:histInvest(h)+(Number.isFinite(Number(h.cash))?Number(h.cash):cashTotal)}));
   const periods=['1W','1M','3M','1Y','ALL'];
   const periodLabel={'1W':'1주','1M':'1달','3M':'3달','1Y':'1년','ALL':'전체'};
 

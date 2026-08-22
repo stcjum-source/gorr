@@ -11,10 +11,23 @@
 
 'use strict';
 
-const admin = require('firebase-admin');
-
 const ROOM   = '2402';
 const DB_URL = 'https://gorr-66f73-default-rtdb.firebaseio.com';
+const ETF_TICKER_FIX = {
+  '243890.KS': '0163Y0.KS',
+  '494640.KS': '0117V0.KS',
+  '469130.KS': '0131V0.KS',
+};
+const NAVER_US = {
+  PLTR: { code: 'PLTR.O', type: 'stock' },
+  TSLA: { code: 'TSLA.O', type: 'stock' },
+  TSLL: { code: 'TSLL.O', type: 'etf' },
+  CRCL: { code: 'CRCL.K', type: 'stock' },
+  BMNR: { code: 'BMNR.K', type: 'stock' },
+  MSTR: { code: 'MSTR.O', type: 'stock' },
+  IREN: { code: 'IREN.O', type: 'stock' },
+  O: { code: 'O.K', type: 'stock' },
+};
 
 // ── 유틸 ──────────────────────────────────────────────────────
 function log(msg) {
@@ -79,8 +92,8 @@ async function fetchExRate() {
   const d2 = await fetchJSON('https://api.exchangerate-api.com/v4/latest/USD');
   if (d2?.rates?.KRW) { log(`환율 exchangerate-api: ${d2.rates.KRW}`); return d2.rates.KRW; }
 
-  log('환율 조회 실패 → 기본값 1450 사용');
-  return 1450;
+  log('환율 조회 실패');
+  return null;
 }
 
 // ── 주식/ETF 가격 ──────────────────────────────────────────────
@@ -164,12 +177,62 @@ async function fetchStockPrice(ticker) {
     if (y != null) return { price: y, source: 'yahoo' };
     return { price: null, source: null };
   }
-  // 미국 → Yahoo (직접+프록시) → Stooq 백업
+  // 미국 → 네이버 해외시세 → Yahoo → Stooq 백업
+  const naver = NAVER_US[ticker];
+  if (naver) {
+    const d = await fetchJSON(`https://polling.finance.naver.com/api/realtime/worldstock/${naver.type}/${naver.code}`);
+    const p = Number(d?.datas?.[0]?.closePriceRaw || String(d?.datas?.[0]?.closePrice || '').replace(/,/g, ''));
+    if (p > 0) return { price: p, source: 'naver-world' };
+  } else if (/^[A-Z][A-Z0-9.-]*$/.test(ticker)) {
+    // 신규 미국 주식도 Yahoo로 바로 넘기지 않고 NASDAQ(.O)/NYSE(.K)를 한 번에 확인한다.
+    const codes = `${ticker}.O,${ticker}.K`;
+    const d = await fetchJSON(`https://polling.finance.naver.com/api/realtime/worldstock/stock/${codes}`);
+    const row = d?.datas?.find(item => item.symbolCode === ticker);
+    const p = Number(row?.closePriceRaw || String(row?.closePrice || '').replace(/,/g, ''));
+    if (p > 0) return { price: p, source: 'naver-world-auto' };
+  }
   const y = await fetchYahooPrice(ticker);
   if (y != null) return { price: y, source: 'yahoo' };
   const s = await fetchStooqPrice(ticker);
   if (s != null) return { price: s, source: 'stooq' };
   return { price: null, source: null };
+}
+
+// 해외종목을 주식/ETF 각 한 번의 요청으로 조회한다. 개별 Yahoo 요청의 429와
+// 무료 프록시 지연을 정상 경로에서 제거하고, 실패 종목만 후속 소스로 넘긴다.
+async function fetchNaverUsPrices(items) {
+  const result = new Map();
+  const groups = { stock: [], etf: [] };
+
+  for (const item of items) {
+    if (item.manual || item.ticker.endsWith('.KS') || item.ticker.endsWith('.KQ')) continue;
+    const known = NAVER_US[item.ticker];
+    if (known) {
+      groups[known.type].push({ ticker: item.ticker, codes: [known.code] });
+    } else if (/^[A-Z][A-Z0-9.-]*$/.test(item.ticker)) {
+      groups.stock.push({ ticker: item.ticker, codes: [`${item.ticker}.O`, `${item.ticker}.K`] });
+    }
+  }
+
+  await Promise.all(Object.entries(groups).map(async ([type, entries]) => {
+    if (!entries.length) return;
+    const codes = [...new Set(entries.flatMap(entry => entry.codes))].join(',');
+    const d = await fetchJSON(`https://polling.finance.naver.com/api/realtime/worldstock/${type}/${codes}`, 10000, {
+      headers: { 'User-Agent': BROWSER_UA },
+    });
+    for (const row of d?.datas || []) {
+      const entry = entries.find(candidate => candidate.codes.includes(row.reutersCode) || candidate.ticker === row.symbolCode);
+      const price = Number(row.closePriceRaw || String(row.closePrice || '').replace(/,/g, ''));
+      const change = Number(row.fluctuationsRatioRaw ?? row.fluctuationsRatio);
+      if (entry && price > 0) result.set(entry.ticker, {
+        price,
+        change: Number.isFinite(change) ? change : null,
+        source: 'naver-world-batch',
+      });
+    }
+  }));
+
+  return result;
 }
 
 // ── 총자산 계산 (assets.html calcAssetVal과 동일 로직) ─────────
@@ -207,11 +270,22 @@ function normalizeHistory(raw) {
   return Object.values(raw).filter(Boolean);
 }
 
+// 기록 품질 점수 — 클수록 신뢰도 높음 (assets.html recRank와 동일 규칙).
+// complete(모두 실시간) > finalized(서버 확정) > stale 개수 적을수록.
+// 부실한 값이 좋은 값을 덮어쓰지 못하게 하는 데 사용.
+function recRank(r) {
+  if (!r) return -1;
+  const finalized = r.provisional === false;
+  const staleN = Array.isArray(r.stale) ? r.stale.length : 0;
+  return (r.complete ? 2 : 0) + (finalized ? 1 : 0) - staleN * 0.001;
+}
+
 // ── 메인 ──────────────────────────────────────────────────────
 async function main() {
   log(`=== 자산 자동 기록 시작 (룸: ${ROOM}) ===`);
 
   // Firebase 초기화
+  const admin = require('firebase-admin');
   const keyJson = process.env.FIREBASE_KEY;
   if (!keyJson) { log('❌ FIREBASE_KEY 환경변수 없음'); process.exit(1); }
 
@@ -237,27 +311,55 @@ async function main() {
 
   const cryptos = data.crypto  || [];
   const stocks  = data.stocks  || [];
-  const etfs    = data.etf     || [];
+  const rawEtfs = data.etf     || [];
+  const etfs    = rawEtfs.map(item => ETF_TICKER_FIX[item.ticker] ? { ...item, ticker: ETF_TICKER_FIX[item.ticker] } : item);
   const cashArr = data.cash    || [];
   const history = normalizeHistory(data.history);
   log(`로드 완료: 코인 ${cryptos.length}개 / 주식 ${stocks.length}개 / ETF ${etfs.length}개 / 기록 ${history.length}일`);
 
-  // 가격 조회
+  // 가격 조회. 실패한 종목은 Firebase의 마지막 정상가로 폴백한다.
+  // freshKeys는 "이번 실행에서 실제 조회된 시세"만 추적한다.
+  const cachedPrices = data.prices || {};
   const prices = {};
+  for (const [key, value] of Object.entries(cachedPrices)) {
+    if (key !== 'changes' && key !== 'exRate' && key !== 'updatedAt' && Number.isFinite(Number(value))) {
+      prices[key] = Number(value);
+    }
+  }
+  const freshKeys = new Set();
 
   log('--- 코인 가격 조회 ---');
-  Object.assign(prices, await fetchCryptoPrices(cryptos));
+  const freshCrypto = await fetchCryptoPrices(cryptos);
+  Object.assign(prices, freshCrypto);
+  Object.keys(freshCrypto).forEach(key => freshKeys.add(key));
 
   log('--- 환율 조회 ---');
-  const exRate = await fetchExRate();
+  const fetchedExRate = await fetchExRate();
+  const cachedExRate = Number(cachedPrices.exRate);
+  const exRate = fetchedExRate ?? (Number.isFinite(cachedExRate) && cachedExRate > 0 ? cachedExRate : null);
+  const fxFresh = fetchedExRate != null;
+  if (exRate == null) {
+    log('❌ 환율의 실시간값과 마지막 정상값이 모두 없어 기록을 중단합니다');
+    process.exit(1);
+  }
+  if (!fxFresh) log(`  ⚠ 환율 폴백: ${exRate}`);
 
   const tradeItems = [...stocks, ...etfs].filter(i => !i.manual);
   log(`--- 주식/ETF ${tradeItems.length}개 가격 조회 ---`);
+  const foreignBatch = await fetchNaverUsPrices(tradeItems);
+  const changes = { ...(cachedPrices.changes || {}) };
+  for (const [ticker, quote] of foreignBatch) {
+    prices[ticker] = quote.price;
+    freshKeys.add(ticker);
+    if (quote.change != null) changes[ticker] = quote.change;
+    log(`  ✓ ${ticker}: ${quote.price} [${quote.source}]`);
+  }
   await Promise.allSettled(
-    tradeItems.map(async item => {
+    tradeItems.filter(item => !freshKeys.has(item.ticker)).map(async item => {
       const { price, source } = await fetchStockPrice(item.ticker);
       if (price != null) {
         prices[item.ticker] = price;
+        freshKeys.add(item.ticker);
         log(`  ✓ ${item.name} (${item.ticker}): ${price} [${source}]`);
       } else {
         log(`  ✗ ${item.name} (${item.ticker}): 조회 실패`);
@@ -265,20 +367,39 @@ async function main() {
     })
   );
 
-  // 로드율 검증
-  const coinOk     = cryptos.length === 0 || cryptos.every(c => prices[c.market] != null);
-  const loadedCnt  = tradeItems.filter(i => prices[i.ticker] != null).length;
-  const ratio      = tradeItems.length === 0 ? 1 : loadedCnt / tradeItems.length;
-  log(`\n로드율 — 코인: ${coinOk ? '✓' : '✗'} / 주식ETF: ${(ratio * 100).toFixed(0)}% (${loadedCnt}/${tradeItems.length})`);
+  // 장중 가격 캐시 전용 실행. history는 건드리지 않고 Firebase 시세만 갱신한다.
+  // 브라우저의 Yahoo/CORS 조회가 실패해도 앱은 이 마지막 서버 가격을 계속 표시한다.
+  if (process.env.PRICE_ONLY === '1') {
+    await db.ref(`assets/${ROOM}/prices`).set({
+      ...prices,
+      exRate,
+      changes,
+      updatedAt: new Date().toISOString(),
+      source: 'server-cache',
+    });
+    log(`✅ 장중 가격 캐시 갱신: ${Object.keys(prices).length}개`);
+    await admin.app().delete();
+    return;
+  }
 
-  if (!coinOk || ratio < 0.7) {
-    log('❌ 로드율 부족 — 기록을 중단합니다 (코인 미로드 또는 주식/ETF 70% 미만)');
+  // 완전성 검증: 실시간 또는 마지막 정상가가 모든 자산에 있어야만 기록한다.
+  const neededKeys = [...cryptos.map(c => c.market), ...tradeItems.map(i => i.ticker)];
+  const missing = neededKeys.filter(key => prices[key] == null);
+  const stale = neededKeys.filter(key => prices[key] != null && !freshKeys.has(key));
+  const hasUsdAssets = tradeItems.some(i => i.currency === 'USD') || stocks.some(i => !i.manual && i.currency !== 'KRW');
+  if (hasUsdAssets && !fxFresh) stale.push('USD/KRW');
+  const complete = missing.length === 0 && stale.length === 0;
+  log(`\n시세 품질 — 실시간 ${freshKeys.size}/${neededKeys.length}, 폴백 ${stale.length}, 누락 ${missing.length}`);
+
+  if (missing.length) {
+    log(`❌ 가격이 전혀 없는 자산: ${missing.join(', ')} — 기록을 중단합니다`);
     process.exit(1);
   }
 
   // 총자산 계산
   const totals = calcTotals(cryptos, stocks, etfs, cashArr, prices, exRate);
-  const grand  = totals.crypto + totals.stocks + totals.etf + totals.cash;
+  const invest = totals.crypto + totals.stocks + totals.etf;
+  const grand  = invest + totals.cash;
   log(`\n총자산: ${Math.round(grand).toLocaleString('ko-KR')}원`);
   log(`  코인 ${Math.round(totals.crypto).toLocaleString('ko-KR')}원`);
   log(`  주식 ${Math.round(totals.stocks).toLocaleString('ko-KR')}원`);
@@ -295,28 +416,45 @@ async function main() {
   const ei  = arr.findIndex(h => h.date === ds);
   const entry = {
     date:   ds,
-    total:  Math.round(grand),
+    // total은 그래프용 투자자산(코인+주식+ETF). 현금은 cash에 별도 저장.
+    total:  Math.round(invest),
     crypto: Math.round(totals.crypto),
     stocks: Math.round(totals.stocks),
     etf:    Math.round(totals.etf),
     cash:   Math.round(totals.cash),
+    complete,
+    stale,
+    source: 'server',
+    provisional: false,
+    ts: new Date().toISOString(),
   };
   if (ei >= 0) {
-    arr[ei] = entry;
-    log('기존 오늘 기록 덮어쓰기');
+    if (recRank(arr[ei]) > recRank(entry)) {
+      log('⚠ 기존 기록이 더 정확해 덮어쓰지 않음');
+    } else {
+      arr[ei] = entry;
+      log('기존 오늘 기록을 더 나은 품질의 서버 값으로 덮어쓰기');
+    }
   } else {
     arr.push(entry);
     log('새 기록 추가');
   }
   arr.sort((a, b) => (a.date > b.date ? 1 : -1));
 
-  await db.ref(`assets/${ROOM}/history`).set(arr);
+  await db.ref(`assets/${ROOM}`).update({
+    history: arr,
+    prices: { ...prices, exRate, changes, updatedAt: new Date().toISOString() },
+  });
   log(`\n✅ 완료: ${ds} → ${(grand / 1e8).toFixed(2)}억원`);
 
   await admin.app().delete();
 }
 
-main().catch(e => {
-  log(`❌ 오류: ${e.message}`);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch(e => {
+    log(`❌ 오류: ${e.message}`);
+    process.exit(1);
+  });
+}
+
+module.exports = { fetchNaverUsPrices, fetchStockPrice };
