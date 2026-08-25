@@ -132,6 +132,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif;font
 .yr-bar-bg{background:var(--bg3);border-radius:3px;height:6px;overflow:hidden}
 .yr-bar-fill{height:100%;background:var(--red);opacity:.75;border-radius:3px}
 .yr-delta{font-size:11px;margin-left:6px}
+.fav-bar{display:flex;align-items:center;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0 10px}
+.fav-bar::-webkit-scrollbar{display:none}
+.fav-lead{flex-shrink:0;font-size:11px;color:var(--text2);font-weight:600}
+.fav-chip{flex-shrink:0;white-space:nowrap;padding:6px 11px;border:1px solid var(--border2);border-radius:99px;background:var(--bg);color:var(--text);font-size:12px;cursor:pointer;font-family:inherit}
+.fav-chip b{font-weight:700}
+.fav-manage{flex-shrink:0;padding:6px 10px;border:1px dashed var(--border2);border-radius:99px;background:transparent;color:var(--text2);font-size:11px;cursor:pointer;font-family:inherit}
+.prevcopy-btn{width:100%;padding:9px;margin-bottom:10px;border:1px dashed var(--border2);border-radius:var(--r-sm);background:var(--bg);color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit}
+.filter-bar{display:flex;gap:6px;margin-bottom:8px}
+.filter-search{flex:1;min-width:0;padding:8px 11px;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;background:var(--bg);color:var(--text);font-family:inherit;outline:none}
+.filter-cat{flex-shrink:0;width:110px;padding:8px 8px;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:12px;background:var(--bg);color:var(--text);font-family:inherit;outline:none;-webkit-appearance:none;appearance:none}
+.icon-btn.copy{color:var(--text2)}
+.icon-btn.star{color:#c99700;border-color:transparent}
 </style>
 </head>
 <body>
@@ -218,7 +230,7 @@ function esc(s){
 
 // ── 기본 데이터 ───────────────────────────────────────────────
 const MONTHS=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
-const DEF_CATS=['식비','식재료','회사식비','교통/주유','건강','스킨케어','미용','쇼핑','문화/여가','교육비','여행','가족/효도','결혼준비','생활용품','경조사','기타'];
+const DEF_CATS=['식비','식재료','회사식비','교통/주유','공과금','건강','스킨케어','미용','쇼핑','문화/여가','교육비','여행','가족/효도','결혼준비','생활용품','경조사','기타'];
 function getCats(){return cfgFallback('cats',DEF_CATS);}
 function saveCats(arr){fbSet('cats'+YY,arr);}
 const DEF_FIXED=[
@@ -284,6 +296,9 @@ function txArr(key,op){
 }
 function applyExps(m,op){txArr('e'+YY+'_'+m,op);}
 function applyInc(m,op){txArr('ia'+YY+'_'+m,op);}
+// 자주 쓰는 항목(즐겨찾기): 방 공통·연도 무관. 트랜잭션으로 동시편집 안전.
+function getFavs(){return Array.isArray(liveData['favs'])?liveData['favs']:[];}
+function applyFavs(op){txArr('favs',op);}
 
 // ── Firebase 연결 ────────────────────────────────────────────
 function initFirebase(){
@@ -327,7 +342,7 @@ function migrateIds(){
 }
 
 const today=new Date();
-let S={month:today.getMonth(),view:'list',person:'권능',showForm:false,editId:null,addingCat:false,showIncForm:false,incEditId:null,showImport:false,importMode:'shot',importText:'',importBusy:false,importStatus:'',importItems:[],importSkipped:0};
+let S={month:today.getMonth(),view:'list',person:'권능',showForm:false,editId:null,addingCat:false,showIncForm:false,incEditId:null,showImport:false,importMode:'shot',importText:'',importBusy:false,importStatus:'',importItems:[],importSkipped:0,prefill:null,favEdit:false};
 
 const INC_TYPES=['권능 월급','가영 월급','부수입 (권능)','부수입 (가영)','기타'];
 
@@ -339,7 +354,8 @@ function fmtS(n){
   return sg+a.toLocaleString('ko-KR');
 }
 function todayStr(){
-  return `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  const d=new Date();   // 등록 시점의 실제 날짜(자정 넘겨 열어둬도 정확)
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 // 폼 기본 날짜: 보고 있는 연도(YEAR)·선택 월(S.month) 기준.
 // 올해·이번달을 보고 있으면 오늘 날짜, 그 외엔 해당 월 1일.
@@ -388,9 +404,10 @@ function render(){
 
   if(S.view==='income'){
     h+=`<div class="sec-title"><span>수입 내역 ${incArr.length}건</span><button class="add-btn" onclick="openIncForm(null)">+ 추가</button></div>`;
+    h+=favBarHtml('income');
     if(S.showIncForm){
       const isE=S.incEditId!=null;
-      const e=isE?(incArr.find(x=>x.id===S.incEditId)||{}):{};
+      const e=isE?(incArr.find(x=>x.id===S.incEditId)||{}):(S.prefill||{});
       h+=`<div class="add-form ${isE?'edit-mode':''}">
         <div class="form-row"><label>날짜</label><input type="date" id="iDate" value="${esc(e.date||defaultDate())}"></div>
         <div class="form-row"><label>종류</label><select id="iType">${INC_TYPES.map(t=>`<option ${t===(e.type||INC_TYPES[0])?'selected':''}>${esc(t)}</option>`).join('')}</select></div>
@@ -416,6 +433,8 @@ function render(){
           </div>
           <div class="exp-right">
             <div class="exp-amt" style="color:var(--green)">+${fmt(e.amt)}</div>
+            <button class="icon-btn star" onclick="starInc('${e.id}')" title="자주 쓰기">★</button>
+            <button class="icon-btn copy" onclick="copyInc('${e.id}')" title="복사">⧉</button>
             <button class="icon-btn" onclick="openIncForm('${e.id}')">수정</button>
             <button class="icon-btn del" onclick="delInc('${e.id}')">✕</button>
           </div>
@@ -451,7 +470,13 @@ function render(){
       </div>
     </div>`;
 
-    h+=`<div class="sec-title"><span>${S.person} 지출 ${curList.length}건</span><span style="display:flex;gap:6px"><button class="add-btn" onclick="toggleImport()">📥 가져오기</button><button class="add-btn" onclick="openForm(null)">+ 추가</button></span></div>`;
+    // 지난달 통째로 복사 (지난달에 지출이 있을 때만)
+    if(S.month>0 && getExps(S.month-1).length){
+      h+=`<button class="prevcopy-btn" onclick="copyPrevMonth()">📥 ${MONTHS[S.month-1]} 지출 ${getExps(S.month-1).length}건을 ${MONTHS[S.month]}로 복사</button>`;
+    }
+
+    h+=`<div class="sec-title"><span>${S.person} 지출 <span id="listCount">${curList.length}건</span></span><span style="display:flex;gap:6px"><button class="add-btn" onclick="toggleImport()">📥 가져오기</button><button class="add-btn" onclick="openForm(null)">+ 추가</button></span></div>`;
+    h+=favBarHtml('expense');
 
     if(S.showImport){
       const M=S.importMode;
@@ -501,18 +526,23 @@ function render(){
 
     // 새 지출 추가 폼은 리스트 맨 위, 수정 폼은 해당 항목 자리에 인라인으로 표시한다.
     if(S.showForm && S.editId==null){
-      h+=expFormHtml({},false);
+      h+=expFormHtml(S.prefill||{},false);
     }
 
     if(curList.length===0){
       h+=`<div class="empty"><div class="empty-icon">📋</div>${S.person==='전체'?'지출 내역이 없어요':S.person+' 지출을 추가해보세요'}</div>`;
     }else{
+      // 검색·항목 필터 (화면 갱신 없이 DOM에서 바로 걸러 IME 안전)
+      h+=`<div class="filter-bar">
+        <input id="searchInput" class="filter-search" type="text" placeholder="🔍 내용·항목 검색" oninput="applyFilter()">
+        <select id="catFilter" class="filter-cat" onchange="applyFilter()"><option value="">전체 항목</option>${getCats().map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select>
+      </div>`;
       const sortedCur=[...curList].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
       h+=`<div class="expense-list">`;
       sortedCur.forEach(e=>{
         if(S.showForm && S.editId===e.id){h+=expFormHtml(e,true);return;}
         const neg=Number(e.amt)<0;
-        h+=`<div class="expense-item">
+        h+=`<div class="expense-item" data-s="${esc(((e.name||'')+' '+(e.cat||'')).toLowerCase())}" data-cat="${esc(e.cat||'')}">
           <div class="exp-left">
             <div class="exp-cat">${esc(e.cat)}</div>
             <div class="exp-name">${esc(e.name||'(내용 없음)')}</div>
@@ -520,6 +550,8 @@ function render(){
           </div>
           <div class="exp-right">
             <div class="exp-amt ${neg?'neg':''}">${neg?'-':''}${fmt(e.amt)}</div>
+            <button class="icon-btn star" onclick="starExp('${e.id}')" title="자주 쓰기">★</button>
+            <button class="icon-btn copy" onclick="copyExp('${e.id}')" title="복사">⧉</button>
             <button class="icon-btn" onclick="openForm('${e.id}')">수정</button>
             <button class="icon-btn del" onclick="delExp('${e.id}')">✕</button>
           </div>
@@ -658,14 +690,14 @@ function render(){
 }
 function goMonth(m){S.month=m;S.view='list';S.showForm=false;S.editId=null;S.showIncForm=false;S.incEditId=null;render();}
 
-function selM(i){S.month=i;S.showForm=false;S.editId=null;S.showIncForm=false;S.incEditId=null;render();}
-function setV(v){S.view=v;S.showForm=false;S.editId=null;S.showIncForm=false;S.incEditId=null;render();}
-function openForm(id){S.showForm=true;S.editId=id;render();setTimeout(()=>{const el=document.getElementById('fName');if(el)el.focus({preventScroll:true});},80);}
-function closeForm(){S.showForm=false;S.editId=null;render();}
+function selM(i){S.month=i;S.showForm=false;S.editId=null;S.showIncForm=false;S.incEditId=null;S.prefill=null;S.favEdit=false;render();}
+function setV(v){S.view=v;S.showForm=false;S.editId=null;S.showIncForm=false;S.incEditId=null;S.prefill=null;S.favEdit=false;render();}
+function openForm(id){S.prefill=null;S.showForm=true;S.editId=id;render();setTimeout(()=>{const el=document.getElementById('fName');if(el)el.focus({preventScroll:true});},80);}
+function closeForm(){S.showForm=false;S.editId=null;S.prefill=null;render();}
 // 지출 추가/수정 폼 HTML. isE=true면 수정(항목 자리 인라인), false면 신규(리스트 맨 위).
 function expFormHtml(e,isE){
   const cats=getCats();
-  const curWho=isE?(e.who||'권능'):(S.person==='전체'?'권능':S.person);
+  const curWho=isE?(e.who||'권능'):(e.who||(S.person==='전체'?'권능':S.person));
   return `<div class="add-form ${isE?'edit-mode':''}">
     <div class="form-row"><label>날짜</label><input type="date" id="fDate" value="${esc(e.date||defaultDate())}"></div>
     <div class="form-row"><label>누구 지출</label><select id="fWho">
@@ -691,8 +723,102 @@ function expFormHtml(e,isE){
     </div>
   </div>`;
 }
-function openIncForm(id){S.showIncForm=true;S.incEditId=id;render();setTimeout(()=>{const el=document.getElementById('iAmt');if(el){el.focus({preventScroll:true});el.select();}},80);}
-function closeIncForm(){S.showIncForm=false;S.incEditId=null;render();}
+function openIncForm(id){S.prefill=null;S.showIncForm=true;S.incEditId=id;render();setTimeout(()=>{const el=document.getElementById('iAmt');if(el){el.focus({preventScroll:true});el.select();}},80);}
+function closeIncForm(){S.showIncForm=false;S.incEditId=null;S.prefill=null;render();}
+
+// ── 자주 쓰는 항목 · 복사 · 지난달 복사 · 검색필터 ────────────
+// 짧은 토스트 알림
+let _toastT=null;
+function toast(msg){
+  let el=document.getElementById('toast');
+  if(!el){el=document.createElement('div');el.id='toast';el.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--accent);color:var(--bg);padding:10px 16px;border-radius:20px;font-size:13px;z-index:2000;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%;box-shadow:0 3px 12px rgba(0,0,0,.25)';document.body.appendChild(el);}
+  el.textContent=msg;el.style.opacity='1';
+  clearTimeout(_toastT);_toastT=setTimeout(()=>{el.style.opacity='0';},1600);
+}
+// 즐겨찾기 칩 바 HTML (kind: 'expense' | 'income')
+function favBarHtml(kind){
+  const favs=getFavs().filter(f=>f.kind===kind);
+  if(!favs.length && !S.favEdit) return '';
+  const chips=favs.map(f=>{
+    const label=esc(f.name||f.cat||f.type||'항목');
+    const amt=Number(f.amt)>0?` <b>${fmtS(f.amt)}</b>`:'';
+    return `<button class="fav-chip" onclick="${S.favEdit?`delFav('${f.id}')`:`useFav('${f.id}')`}">${label}${amt}${S.favEdit?' ✕':''}</button>`;
+  }).join('');
+  return `<div class="fav-bar"><span class="fav-lead">⭐ 자주</span>${chips||'<span class="fav-lead" style="font-weight:400">별(★) 눌러 등록</span>'}<button class="fav-manage" onclick="toggleFavEdit()">${S.favEdit?'완료':'관리'}</button></div>`;
+}
+function toggleFavEdit(){S.favEdit=!S.favEdit;render();}
+function addFavFrom(kind,obj){
+  const fav = kind==='income'
+    ? {id:genId('fav'),kind:'income',type:obj.type||'기타',name:obj.name||'',amt:Number(obj.amt)||0}
+    : {id:genId('fav'),kind:'expense',cat:obj.cat||getCats()[0],name:obj.name||'',amt:Number(obj.amt)||0,who:obj.who||'권능'};
+  const same=f=>f.kind===fav.kind&&(f.name||'')===(fav.name||'')&&Number(f.amt)===Number(fav.amt)&&(fav.kind==='income'?f.type===fav.type:(f.cat===fav.cat&&f.who===fav.who));
+  if(getFavs().some(same)){toast('이미 자주 쓰는 항목이에요');return;}
+  applyFavs(arr=>[...arr,fav]);toast('자주 쓰는 항목에 추가했어요');render();
+}
+function starExp(id){const e=getExps(S.month).find(x=>x.id===id);if(e)addFavFrom('expense',e);}
+function starInc(id){const e=getIncArr(S.month).find(x=>x.id===id);if(e)addFavFrom('income',e);}
+function delFav(id){applyFavs(arr=>arr.filter(f=>f.id!==id));render();}
+// 보는 연/월과 무관하게 "오늘(실제 현재 연·월)"로 화면 맥락을 맞춘다.
+function goTodayCtx(){const d=new Date();YEAR=d.getFullYear();YY=String(YEAR).slice(-2);S.month=d.getMonth();}
+// 즐겨찾기 원탭 등록 (항상 오늘 날짜·오늘 달). 금액 없는 즐겨찾기는 폼을 프리필해서 연다.
+function useFav(id){
+  const f=getFavs().find(x=>x.id===id);if(!f)return;
+  goTodayCtx();
+  if(!(Number(f.amt)>0)){
+    if(f.kind==='income'){S.prefill={type:f.type,name:f.name};S.showIncForm=true;S.incEditId=null;render();setTimeout(()=>{const el=document.getElementById('iAmt');if(el)el.focus({preventScroll:true});},80);}
+    else{S.prefill={cat:f.cat,name:f.name,who:f.who};S.showForm=true;S.editId=null;render();setTimeout(()=>{const el=document.getElementById('fAmt');if(el)el.focus({preventScroll:true});},80);}
+    return;
+  }
+  const date=todayStr();
+  if(f.kind==='income'){
+    const nit={id:genId('n'),date,type:f.type||'기타',name:f.name,amt:Number(f.amt)};
+    applyInc(S.month,arr=>[...arr,nit].sort(dsort));
+  }else{
+    const nit={id:genId('x'),date,cat:f.cat,name:f.name,amt:Number(f.amt),who:f.who};
+    applyExps(S.month,arr=>[...arr,nit].sort(dsort));
+  }
+  render();toast(`${f.name||f.cat||f.type} 오늘 등록됨`);
+}
+// 내역 복사: 같은 내용으로 항상 "오늘(현재 달·현재 날짜)"에 새 항목 등록 (보던 달과 무관)
+function copyExp(id){
+  const e=getExps(S.month).find(x=>x.id===id);if(!e)return;
+  goTodayCtx();
+  const nit={id:genId('x'),date:todayStr(),cat:e.cat,name:e.name,amt:Number(e.amt)||0,who:e.who};
+  applyExps(S.month,arr=>[...arr,nit].sort(dsort));render();toast('오늘 날짜로 복사했어요');
+}
+function copyInc(id){
+  const e=getIncArr(S.month).find(x=>x.id===id);if(!e)return;
+  goTodayCtx();
+  const nit={id:genId('n'),date:todayStr(),type:e.type,name:e.name,amt:Number(e.amt)||0};
+  applyInc(S.month,arr=>[...arr,nit].sort(dsort));render();toast('오늘 날짜로 복사했어요');
+}
+// 지난달 지출을 이번 달로 통째 복사 (금액·항목 그대로, 날짜만 이번 달로)
+function copyPrevMonth(){
+  const m=S.month;
+  if(m<=0){alert('1월은 지난달이 없어요');return;}
+  const prev=getExps(m-1);
+  if(!prev.length){alert('지난달 지출 내역이 없어요');return;}
+  if(!confirm(`${MONTHS[m-1]} 지출 ${prev.length}건을 ${MONTHS[m]}로 복사할까요?\n(금액·항목은 그대로, 날짜만 ${MONTHS[m]}로 맞춰요)`))return;
+  const lastDay=new Date(YEAR,m+1,0).getDate();
+  const copies=prev.map(e=>{
+    const p=parseYmd(e.date),day=p?Math.min(p.d,lastDay):1;
+    const date=`${YEAR}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    return {id:genId('x'),date,cat:e.cat,name:e.name,amt:Number(e.amt)||0,who:e.who};
+  });
+  applyExps(m,arr=>[...arr,...copies].sort(dsort));render();
+  alert(`${copies.length}건 복사했어요.`);
+}
+// 검색·항목 필터: DOM에서 직접 표시/숨김 (화면 재생성 없음 → 한글 입력 안전)
+function applyFilter(){
+  const q=(document.getElementById('searchInput')?.value||'').trim().toLowerCase();
+  const cf=document.getElementById('catFilter')?.value||'';
+  let shown=0;
+  document.querySelectorAll('.expense-item[data-s]').forEach(el=>{
+    const vis=(!q||el.dataset.s.includes(q))&&(!cf||el.dataset.cat===cf);
+    el.style.display=vis?'':'none';if(vis)shown++;
+  });
+  const lc=document.getElementById('listCount');if(lc)lc.textContent=shown+'건';
+}
 
 // 'YYYY-MM-DD'를 파싱하고 실제 존재하는 날짜인지 검증. {y,m(0-based),d} 또는 null.
 function parseYmd(s){
@@ -720,14 +846,15 @@ function saveInc(){
     if(tm===S.month){
       applyInc(S.month,arr=>arr.map(x=>x.id===id?{...x,date,type,name,amt}:x).sort(dsort));
     }else{
-      applyInc(S.month,arr=>arr.filter(x=>x.id!==id));
+      // 이동: 새 달에 먼저 추가하고 → 옛 달에서 삭제 (중간 실패 시 유실 대신 복구 가능한 중복)
       applyInc(tm,arr=>[...arr.filter(x=>x.id!==id),{id,date,type,name,amt}].sort(dsort));
+      applyInc(S.month,arr=>arr.filter(x=>x.id!==id));
     }
   }else{
     const id=genId('n');
     applyInc(tm,arr=>[...arr.filter(x=>x.id!==id),{id,date,type,name,amt}].sort(dsort));
   }
-  S.month=tm;S.showIncForm=false;S.incEditId=null;render();
+  S.month=tm;S.showIncForm=false;S.incEditId=null;S.prefill=null;render();
 }
 function delInc(id){
   if(!confirm('삭제할까요?'))return;
@@ -1011,14 +1138,15 @@ function saveExp(){
     if(tm===S.month){
       applyExps(S.month,arr=>arr.map(x=>x.id===id?{...x,date,cat,name,amt,who}:x).sort(dsort));
     }else{
-      applyExps(S.month,arr=>arr.filter(x=>x.id!==id));
+      // 이동: 새 달에 먼저 추가하고 → 옛 달에서 삭제 (중간 실패 시 유실 대신 복구 가능한 중복)
       applyExps(tm,arr=>[...arr.filter(x=>x.id!==id),{id,date,cat,name,amt,who}].sort(dsort));
+      applyExps(S.month,arr=>arr.filter(x=>x.id!==id));
     }
   }else{
     const id=genId('x');
     applyExps(tm,arr=>[...arr.filter(x=>x.id!==id),{id,date,cat,name,amt,who}].sort(dsort));
   }
-  S.month=tm;S.showForm=false;S.editId=null;render();
+  S.month=tm;S.showForm=false;S.editId=null;S.prefill=null;render();
 }
 function delExp(id){
   if(!confirm('삭제할까요?'))return;
