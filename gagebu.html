@@ -110,6 +110,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif;font
 .import-raw summary{cursor:pointer;padding:4px 0}
 .import-raw pre{white-space:pre-wrap;word-break:break-all;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px;max-height:220px;overflow:auto;font-size:11px;line-height:1.5}
 .import-preview{margin-top:10px;border-top:1px solid var(--border)}
+.batch-panel .ii-del{flex-shrink:0;width:32px;border:1px solid var(--border2);border-radius:var(--r-sm);background:var(--bg);color:var(--text2);cursor:pointer;font-size:14px;line-height:1}
+.add-row-btn{width:100%;margin-top:8px;padding:9px;border:1.5px dashed var(--border2);border-radius:var(--r-sm);background:var(--bg2);color:var(--accent);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
 .import-item{display:block;padding:9px 0;border-bottom:1px solid var(--border);font-size:12px}
 .import-item:last-child{border-bottom:none}
 .import-item input[type=checkbox]{width:17px;height:17px}
@@ -348,7 +350,7 @@ function migrateIds(){
 }
 
 const today=new Date();
-let S={month:today.getMonth(),view:'list',person:'권능',showForm:false,editId:null,addingCat:false,showIncForm:false,incEditId:null,showImport:false,importMode:'shot',importText:'',importBusy:false,importStatus:'',importItems:[],importSkipped:0,importRaw:'',visionEdit:false,prefill:null,favEdit:false};
+let S={month:today.getMonth(),view:'list',person:'권능',showForm:false,editId:null,addingCat:false,showIncForm:false,incEditId:null,showImport:false,importMode:'shot',importText:'',importBusy:false,importStatus:'',importItems:[],importSkipped:0,importRaw:'',visionEdit:false,prefill:null,favEdit:false,batchRows:null};
 
 const INC_TYPES=['권능 월급','가영 월급','부수입 (권능)','부수입 (가영)','기타'];
 
@@ -481,8 +483,9 @@ function render(){
       h+=`<button class="prevcopy-btn" onclick="copyPrevMonth()">📥 ${MONTHS[S.month-1]} 지출 ${getExps(S.month-1).length}건을 ${MONTHS[S.month]}로 복사</button>`;
     }
 
-    h+=`<div class="sec-title"><span>${S.person} 지출 <span id="listCount">${curList.length}건</span></span><span style="display:flex;gap:6px"><button class="add-btn" onclick="toggleImport()">📥 가져오기</button><button class="add-btn" onclick="openForm(null)">+ 추가</button></span></div>`;
+    h+=`<div class="sec-title"><span>${S.person} 지출 <span id="listCount">${curList.length}건</span></span><span style="display:flex;gap:6px"><button class="add-btn" onclick="toggleImport()">📥 가져오기</button><button class="add-btn" onclick="openBatch()">📝 여러건</button><button class="add-btn" onclick="openForm(null)">+ 추가</button></span></div>`;
     h+=favBarHtml('expense');
+    if(S.batchRows) h+=batchPanelHtml();
 
     if(S.showImport){
       const M=S.importMode;
@@ -739,6 +742,50 @@ function expFormHtml(e,isE){
       <button class="btn-save" onclick="saveExp()">${isE?'수정 완료':'저장'}</button>
     </div>
   </div>`;
+}
+// ── 여러 건 한 번에 입력 ──────────────────────────────────────
+function blankBatchRow(){return {date:defaultDate(),who:(S.person==='전체'?'권능':S.person),cat:getCats()[0],name:'',amt:''};}
+function openBatch(){S.showForm=false;S.editId=null;S.showImport=false;S.batchRows=[blankBatchRow(),blankBatchRow(),blankBatchRow()];render();setTimeout(()=>{const el=document.querySelector('.batch-panel .ii-name');if(el)el.focus({preventScroll:true});},80);}
+function closeBatch(){S.batchRows=null;render();}
+function addBatchRow(){(S.batchRows=S.batchRows||[]).push(blankBatchRow());render();setTimeout(()=>{const els=document.querySelectorAll('.batch-panel .ii-name');const el=els[els.length-1];if(el)el.focus({preventScroll:true});},60);}
+function delBatchRow(i){if(!S.batchRows)return;S.batchRows.splice(i,1);if(!S.batchRows.length)S.batchRows.push(blankBatchRow());render();}
+function setBatchField(i,f,v){const r=S.batchRows&&S.batchRows[i];if(!r)return;r[f]=v;}
+function batchPanelHtml(){
+  const cats=getCats();
+  const rows=S.batchRows.map((r,i)=>`<div class="import-item">
+    <div class="import-top">
+      <input class="ii-name" type="text" value="${esc(r.name)}" placeholder="내용 (예: 스타벅스)" oninput="setBatchField(${i},'name',this.value)">
+      <button class="ii-del" title="이 줄 삭제" onclick="delBatchRow(${i})">✕</button>
+    </div>
+    <div class="import-edit">
+      <input class="ii-date" type="date" value="${esc(r.date)}" onchange="setBatchField(${i},'date',this.value)">
+      <input class="ii-amt" type="number" inputmode="numeric" value="${r.amt}" placeholder="금액" oninput="setBatchField(${i},'amt',this.value)">
+      <select onchange="setBatchField(${i},'cat',this.value)">${cats.map(c=>`<option ${c===r.cat?'selected':''}>${esc(c)}</option>`).join('')}</select>
+      <select onchange="setBatchField(${i},'who',this.value)"><option ${r.who==='권능'?'selected':''}>권능</option><option ${r.who==='가영'?'selected':''}>가영</option></select>
+    </div>
+  </div>`).join('');
+  return `<div class="import-panel batch-panel">
+    <div class="import-preview-head">여러 건 입력 · 채운 줄만 저장돼요 (빈 줄·금액 0은 건너뜀)</div>
+    ${rows}
+    <button class="add-row-btn" onclick="addBatchRow()">+ 줄 추가</button>
+    <div class="form-actions"><button class="btn-cancel" onclick="closeBatch()">취소</button><button class="btn-save" onclick="saveBatch()">전체 저장</button></div>
+  </div>`;
+}
+function saveBatch(){
+  const rows=S.batchRows||[];
+  let added=0,skipped=0;const byMonth={};
+  rows.forEach(r=>{
+    const amt=Math.abs(Math.round(Number(String(r.amt).replace(/[^\d.-]/g,''))||0));
+    const p=parseYmd(r.date);
+    const name=(r.name||'').trim();
+    if(!amt||!p||p.y!==YEAR){if(amt||name)skipped++;return;}
+    (byMonth[p.m]=byMonth[p.m]||[]).push({id:genId('x'),date:r.date,cat:r.cat||getCats()[0],name:name||'(내용 없음)',amt,who:r.who||'권능'});
+    added++;
+  });
+  if(!added){alert('저장할 내용이 없어요. 금액과 날짜를 채워주세요.');return;}
+  Object.keys(byMonth).forEach(m=>{const list=byMonth[m];applyExps(Number(m),arr=>[...arr,...list].sort(dsort));});
+  S.batchRows=null;render();
+  toast(`${added}건 저장했어요.${skipped?` (미완성 ${skipped}줄 건너뜀)`:''}`);
 }
 function openIncForm(id){S.prefill=null;S.showIncForm=true;S.incEditId=id;render();setTimeout(()=>{const el=document.getElementById('iAmt');if(el){el.focus({preventScroll:true});el.select();}},80);}
 function closeIncForm(){S.showIncForm=false;S.incEditId=null;S.prefill=null;render();}
