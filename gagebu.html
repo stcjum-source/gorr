@@ -103,6 +103,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif;font
 .import-drop{border:1.5px dashed var(--border2);border-radius:var(--r);padding:20px 12px;text-align:center;color:var(--text2);cursor:pointer;background:var(--bg2);line-height:1.6}
 .import-drop.busy{pointer-events:none;opacity:.65}
 .import-status{font-size:12px;color:var(--text2);margin-top:9px;line-height:1.5}
+.vision-row{margin-bottom:10px;padding:8px 10px;border:1px solid var(--border2);border-radius:var(--r-sm);background:var(--bg2)}
+.vision-row.on{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;color:var(--text2)}
+.vision-link{background:none;border:none;color:var(--accent);font-size:12px;cursor:pointer;padding:0;font-family:inherit}
+.import-raw{margin-top:9px;font-size:12px;color:var(--text2)}
+.import-raw summary{cursor:pointer;padding:4px 0}
+.import-raw pre{white-space:pre-wrap;word-break:break-all;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px;max-height:220px;overflow:auto;font-size:11px;line-height:1.5}
 .import-preview{margin-top:10px;border-top:1px solid var(--border)}
 .import-item{display:block;padding:9px 0;border-bottom:1px solid var(--border);font-size:12px}
 .import-item:last-child{border-bottom:none}
@@ -342,7 +348,7 @@ function migrateIds(){
 }
 
 const today=new Date();
-let S={month:today.getMonth(),view:'list',person:'권능',showForm:false,editId:null,addingCat:false,showIncForm:false,incEditId:null,showImport:false,importMode:'shot',importText:'',importBusy:false,importStatus:'',importItems:[],importSkipped:0,prefill:null,favEdit:false};
+let S={month:today.getMonth(),view:'list',person:'권능',showForm:false,editId:null,addingCat:false,showIncForm:false,incEditId:null,showImport:false,importMode:'shot',importText:'',importBusy:false,importStatus:'',importItems:[],importSkipped:0,importRaw:'',visionEdit:false,prefill:null,favEdit:false};
 
 const INC_TYPES=['권능 월급','가영 월급','부수입 (권능)','부수입 (가영)','기타'];
 
@@ -487,6 +493,16 @@ function render(){
           <button class="imode ${M==='text'?'on':''}" onclick="setImportMode('text')">✍️ 텍스트</button>
         </div>`;
       if(M==='shot'){
+        const vk=getVisionKey();
+        h+=(vk&&!S.visionEdit)
+          ? `<div class="vision-row on"><span>✅ 구글 비전 켜짐 (한글 정확 인식)</span><span><button class="vision-link" onclick="editVisionKey()">키 변경</button> · <button class="vision-link" onclick="clearVisionKey()">삭제</button></span></div>`
+          : `<div class="vision-row">
+              <div style="font-size:11px;color:var(--muted);margin-bottom:5px">한글까지 정확히 읽으려면 <b>구글 비전 API 키</b>를 넣으세요(무료·1회). 안 넣으면 기본 인식으로 동작해요.</div>
+              <div style="display:flex;gap:6px">
+                <input id="visionKeyInput" type="password" placeholder="구글 비전 API 키 붙여넣기" style="flex:1;padding:8px 10px;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;background:var(--bg);color:var(--text);font-family:inherit;outline:none" value="${esc(vk)}">
+                <button class="btn-save" style="width:auto;padding:8px 14px" onclick="saveVisionKey()">저장</button>
+              </div>
+            </div>`;
         h+=`<input id="importFile" type="file" accept="image/*" multiple hidden onchange="readImportFiles(this.files)">
         <div id="importDrop" class="import-drop ${S.importBusy?'busy':''}" onclick="document.getElementById('importFile').click()">
           <strong>${S.importBusy?'스크린샷 읽는 중…':'스크린샷을 붙여넣거나 눌러서 선택'}</strong><br>
@@ -503,6 +519,7 @@ function render(){
         <button class="btn-save" style="width:100%;margin-top:8px" onclick="readImportTextArea()">텍스트 인식</button>`;
       }
       h+=`${S.importStatus?`<div class="import-status">${esc(S.importStatus)}</div>`:''}
+        ${S.importRaw?`<details class="import-raw"><summary>인식 원문 보기</summary><pre>${esc(S.importRaw)}</pre></details>`:''}
         ${S.importItems.length?`<div class="import-preview">
           <div class="import-preview-head">인식 결과 ${S.importItems.length}건 · 등록 전에 바로 수정할 수 있어요</div>
           ${S.importItems.map((it,i)=>`<div class="import-item ${it.selected?'':'off'}">
@@ -947,7 +964,9 @@ function parseTransactions(raw,defaultMonth){
   const lines=String(raw||'').replace(/\r/g,'').split('\n').map(s=>s.replace(/[​ ]/g,' ').trim()).filter(Boolean);
   const all=lines.join(' ');
   if(/머니\s*\+?\s*포인트\s*결제|이벤트\s*결제|결제\s*취소/.test(all)&&/20\d{2}\s*[.\-]/.test(all))return parseSamsung(lines);
-  if(/카카오페이머니|[·・]\s*페이머니|\d{1,2}일\s*(월|화|수|목|금|토|일)요일/.test(all))return parseKakao(lines,defaultMonth);
+  // 카카오페이 전용 마커(페이머니)가 있을 때만 카카오 파서. "N일 요일" 헤더만 있는
+  // 카드앱(뱅크샐러드 등, 금액 위·이름 아래)은 generic 파서가 더 정확히 처리한다.
+  if(/카카오페이머니|[·・]\s*페이머니/.test(all))return parseKakao(lines,defaultMonth);
   return parseImportText(raw,defaultMonth);
 }
 // 삼성월렛/삼성페이: [가맹점] -금액원 / YYYY.M.D. 오후 h:mm:ss / 이벤트 결제 / 머니+포인트 결제
@@ -1010,7 +1029,20 @@ function parseImportText(raw,defaultMonth){
     const financeOnly=/→/.test(joined)&&joined.split('→').every(x=>/(내\s*|은행|뱅크|카드|페이|머니|통장|계좌)/i.test(x));
     if(!day||IMPORT_EXCLUDES.some(re=>re.test(joined))||financeOnly){skipped++;continue;}
     const kind=(am[1]==='+'||(/→\s*내\s*/.test(joined)&&!/내\s*.*→/.test(joined)))?'income':'expense';
-    const name=(/[가-힣A-Za-z]/.test(sameLine)?sameLine:cleanImportName(block)).replace(/[|]/g,' ').trim().slice(0,60)||'내용 미인식';
+    // 이름: ①금액과 같은 줄 ②금액 앞 줄(block) ③금액 다음 줄(카드앱: 금액 위·이름 아래). "가맹점 | 카드" 는 앞부분만.
+    let name='';
+    if(/[가-힣A-Za-z]/.test(sameLine)) name=sameLine;
+    else{
+      const b=cleanImportName(block);
+      if(b&&b!=='내용 미인식'&&/[가-힣A-Za-z]/.test(b)) name=b;
+      else for(let k=i+1;k<lines.length&&k<=i+3;k++){
+        if(amountRe.test(lines[k]))break;                                   // 다음 거래 금액
+        if(/(?:^|\s)(1[0-2]|0?[1-9])\s*월|(?:^|\s)(3[01]|[12]?\d)\s*일/.test(lines[k]))break; // 날짜헤더
+        const cand=lines[k].split('|')[0].trim();
+        if(/[가-힣A-Za-z]/.test(cand)&&!isJunkLine(cand)){name=cand;start=k+1;break;}
+      }
+    }
+    name=name.split('|')[0].replace(/[|]/g,' ').trim().slice(0,60)||'내용 미인식';
     const validDate=new Date(YEAR,month-1,day);
     if(validDate.getMonth()!==month-1||validDate.getDate()!==day){skipped++;continue;}
     const date=`${YEAR}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
@@ -1085,6 +1117,24 @@ function readImportTextArea(){
     :'거래를 찾지 못했어요. 날짜·내용·금액이 함께 보이도록 붙여넣어 주세요.';
   render();
 }
+// ── 구글 비전 OCR (한글 정확 인식) ──────────────────────────
+function getVisionKey(){try{return localStorage.getItem('gagebu_vision_key')||'';}catch(_){return '';}}
+function setVisionKey(v){try{v&&v.trim()?localStorage.setItem('gagebu_vision_key',v.trim()):localStorage.removeItem('gagebu_vision_key');}catch(_){}}
+function saveVisionKey(){const el=document.getElementById('visionKeyInput');if(el)setVisionKey(el.value);S.visionEdit=false;render();}
+function editVisionKey(){S.visionEdit=true;render();}
+function clearVisionKey(){if(confirm('구글 비전 키를 삭제할까요? 이후엔 기본 인식으로 돌아갑니다.')){setVisionKey('');S.visionEdit=false;render();}}
+function fileToBase64(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]||'');r.onerror=rej;r.readAsDataURL(file);});}
+async function visionOCR(file,key){
+  const content=await fileToBase64(file);
+  const body={requests:[{image:{content},features:[{type:'DOCUMENT_TEXT_DETECTION'}],imageContext:{languageHints:['ko','en']}}]};
+  const res=await fetch('https://vision.googleapis.com/v1/images:annotate?key='+encodeURIComponent(key),
+    {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  let j={};try{j=await res.json();}catch(_){}
+  if(!res.ok){throw new Error((j&&j.error&&j.error.message)||('HTTP '+res.status));}
+  const r0=(j.responses&&j.responses[0])||{};
+  if(r0.error&&r0.error.message)throw new Error(r0.error.message);
+  return (r0.fullTextAnnotation&&r0.fullTextAnnotation.text)||'';
+}
 // ── OCR 품질 개선: 이미지 전처리 + 정밀 한글모델 워커(1회 생성·재사용) ──
 let _ocrWorker=null, _ocrProgress=null;
 function _setImportStatus(t){S.importStatus=t;const el=document.querySelector('.import-status');if(el)el.textContent=t;}
@@ -1134,32 +1184,41 @@ function preprocessForOCR(file){
 async function readImportFiles(fileList){
   const files=[...(fileList||[])].filter(f=>f&&f.type.startsWith('image/'));
   if(!files.length){S.importStatus='이미지 파일을 찾지 못했어요.';render();return;}
-  if(!window.Tesseract){S.importStatus='글자 인식 도구를 불러오지 못했어요. 인터넷 연결을 확인해주세요.';render();return;}
-  S.showImport=true;S.importMode='shot';S.importBusy=true;S.importItems=[];S.importSkipped=0;S.importStatus=`${files.length}장 준비 중… (첫 인식은 한글모델 다운로드로 조금 걸려요)`;render();
+  const vkey=getVisionKey();
+  if(!vkey&&!window.Tesseract){S.importStatus='글자 인식 도구를 불러오지 못했어요. 인터넷 연결을 확인해주세요.';render();return;}
+  S.showImport=true;S.importMode='shot';S.importBusy=true;S.importItems=[];S.importSkipped=0;S.importRaw='';
+  S.importStatus=vkey?`${files.length}장 구글 비전으로 읽는 중…`:`${files.length}장 준비 중… (첫 인식은 한글모델 다운로드로 조금 걸려요)`;render();
   try{
     let worker=null;
-    try{ worker=await getOcrWorker(); }
-    catch(e){ console.warn('OCR 워커 생성 실패 → 1회성 인식으로 대체',e); }
+    if(!vkey){ try{ worker=await getOcrWorker(); }catch(e){ console.warn('OCR 워커 생성 실패 → 1회성 인식으로 대체',e); } }
     for(let i=0;i<files.length;i++){
-      _setImportStatus(`${i+1}/${files.length}장 준비 중…`);
-      let img; try{ img=await preprocessForOCR(files[i]); }catch(_){ img=files[i]; }
+      _setImportStatus(`${i+1}/${files.length}장 읽는 중…`);
       let text='';
-      if(worker){
-        _ocrProgress=fr=>_setImportStatus(`${i+1}/${files.length}장 글자 읽는 중 · ${Math.round(fr*100)}%`);
-        try{ const {data}=await worker.recognize(img); text=data?.text||''; }
-        finally{ _ocrProgress=null; }
+      if(vkey){
+        try{ text=await visionOCR(files[i],vkey); }
+        catch(e){ console.error(e);
+          S.importStatus='구글 비전 오류: '+e.message+' (키·사용량·도메인 제한을 확인하세요)';
+          S.importBusy=false;render();return; }
       }else{
-        const result=await Tesseract.recognize(img,'kor+eng',{logger:p=>{
-          if(p.status==='recognizing text')_setImportStatus(`${i+1}/${files.length}장 글자 읽는 중 · ${Math.round((p.progress||0)*100)}%`);
-        }});
-        text=result?.data?.text||'';
+        let img; try{ img=await preprocessForOCR(files[i]); }catch(_){ img=files[i]; }
+        if(worker){
+          _ocrProgress=fr=>_setImportStatus(`${i+1}/${files.length}장 글자 읽는 중 · ${Math.round(fr*100)}%`);
+          try{ const {data}=await worker.recognize(img); text=data?.text||''; }
+          finally{ _ocrProgress=null; }
+        }else{
+          const result=await Tesseract.recognize(img,'kor+eng',{logger:p=>{
+            if(p.status==='recognizing text')_setImportStatus(`${i+1}/${files.length}장 글자 읽는 중 · ${Math.round((p.progress||0)*100)}%`);
+          }});
+          text=result?.data?.text||'';
+        }
       }
+      S.importRaw+=(S.importRaw?`\n----- ${i+1}장 -----\n`:'')+text;
       const parsed=parseTransactions(text,S.month);
       S.importItems.push(...parsed.items);S.importSkipped+=parsed.skipped;
     }
     S.importStatus=S.importItems.length
-      ?`${S.importItems.length}건을 찾았어요. 취소·충전 등 ${S.importSkipped}건은 제외했어요. 등록 전에 수정하세요.`
-      :'등록할 거래를 찾지 못했어요. 날짜와 금액이 모두 보이는 선명한 스크린샷인지 확인해주세요.';
+      ?`${S.importItems.length}건을 찾았어요.${S.importSkipped?` 취소·충전 등 ${S.importSkipped}건은 제외했어요.`:''} 등록 전에 수정하세요.`
+      :'등록할 거래를 찾지 못했어요. 아래 "인식 원문 보기"를 확인해주세요.';
   }catch(e){console.error(e);S.importStatus='스크린샷을 읽지 못했어요. 잠시 후 다시 시도해주세요.';}
   S.importBusy=false;render();
 }
