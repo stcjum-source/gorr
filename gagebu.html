@@ -1242,13 +1242,22 @@ function fileToBase64(file){return new Promise((res,rej)=>{const r=new FileReade
 async function visionOCR(file,key){
   const content=await fileToBase64(file);
   const body={requests:[{image:{content},features:[{type:'DOCUMENT_TEXT_DETECTION'}],imageContext:{languageHints:['ko','en']}}]};
-  const res=await fetch('https://vision.googleapis.com/v1/images:annotate?key='+encodeURIComponent(key),
-    {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  let j={};try{j=await res.json();}catch(_){}
-  if(!res.ok){throw new Error((j&&j.error&&j.error.message)||('HTTP '+res.status));}
-  const r0=(j.responses&&j.responses[0])||{};
-  if(r0.error&&r0.error.message)throw new Error(r0.error.message);
-  return (r0.fullTextAnnotation&&r0.fullTextAnnotation.text)||'';
+  const url='https://vision.googleapis.com/v1/images:annotate?key='+encodeURIComponent(key);
+  const transient=m=>/unavailable|internal|try again|deadline|timeout|일시|잠시/i.test(m||'');
+  let lastErr=null;
+  for(let attempt=0;attempt<4;attempt++){
+    if(attempt) await new Promise(r=>setTimeout(r,600*attempt)); // 0.6s,1.2s,1.8s 대기 후 재시도
+    try{
+      const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      let j={};try{j=await res.json();}catch(_){}
+      if(res.status===503||res.status===429||res.status===500){lastErr=new Error((j&&j.error&&j.error.message)||('HTTP '+res.status));continue;}
+      if(!res.ok)throw new Error((j&&j.error&&j.error.message)||('HTTP '+res.status));
+      const r0=(j.responses&&j.responses[0])||{};
+      if(r0.error&&r0.error.message){ if(transient(r0.error.message)){lastErr=new Error(r0.error.message);continue;} throw new Error(r0.error.message); }
+      return (r0.fullTextAnnotation&&r0.fullTextAnnotation.text)||'';
+    }catch(e){ lastErr=e; if(!transient(e.message)&&!/network|fetch|load failed/i.test(e.message||''))throw e; }
+  }
+  throw new Error('구글 서버가 잠시 불안정해요. 잠깐 뒤 다시 시도해주세요. ('+((lastErr&&lastErr.message)||'unavailable')+')');
 }
 // ── OCR 품질 개선: 이미지 전처리 + 정밀 한글모델 워커(1회 생성·재사용) ──
 let _ocrWorker=null, _ocrProgress=null;
