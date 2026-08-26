@@ -1118,8 +1118,18 @@ function readImportTextArea(){
   render();
 }
 // ── 구글 비전 OCR (한글 정확 인식) ──────────────────────────
-function getVisionKey(){try{return localStorage.getItem('gagebu_vision_key')||'';}catch(_){return '';}}
-function setVisionKey(v){try{v&&v.trim()?localStorage.setItem('gagebu_vision_key',v.trim()):localStorage.removeItem('gagebu_vision_key');}catch(_){}}
+// 비전 키는 방(파이어베이스)에 공유 저장 → 같은 방코드면 모든 기기 자동 적용.
+// DB 준비 전/오프라인 대비 localStorage에도 캐시.
+function getVisionKey(){
+  const shared=(typeof liveData==='object'&&liveData&&typeof liveData['visionKey']==='string')?liveData['visionKey'].trim():'';
+  if(shared) return shared;
+  try{return (localStorage.getItem('gagebu_vision_key')||'').trim();}catch(_){return '';}
+}
+function setVisionKey(v){
+  const val=(v||'').trim();
+  try{val?localStorage.setItem('gagebu_vision_key',val):localStorage.removeItem('gagebu_vision_key');}catch(_){}
+  if(typeof fbSet==='function') fbSet('visionKey',val); // 방 공유 저장(다른 기기 자동 동기화)
+}
 function saveVisionKey(){const el=document.getElementById('visionKeyInput');if(el)setVisionKey(el.value);S.visionEdit=false;render();}
 function editVisionKey(){S.visionEdit=true;render();}
 function clearVisionKey(){if(confirm('구글 비전 키를 삭제할까요? 이후엔 기본 인식으로 돌아갑니다.')){setVisionKey('');S.visionEdit=false;render();}}
