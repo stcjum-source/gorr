@@ -1239,6 +1239,18 @@ function _vmonth(){const d=new Date();return d.getFullYear()+'-'+String(d.getMon
 function visionUsage(){let u={month:_vmonth(),count:0};try{const s=JSON.parse(localStorage.getItem('gagebu_vision_usage')||'null');if(s&&s.month===_vmonth())u=s;}catch(_){}return u;}
 function bumpVisionUsage(n){const u=visionUsage();u.count+=(n||1);try{localStorage.setItem('gagebu_vision_usage',JSON.stringify(u));}catch(_){}return u;}
 function fileToBase64(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]||'');r.onerror=rej;r.readAsDataURL(file);});}
+// 같은 이미지 재인식 방지 캐시: 이미지 해시→인식결과. 재읽기 시 구글 재호출·사용량 차감 안 함.
+async function imgHash(file){
+  try{const buf=await file.arrayBuffer();const h=await crypto.subtle.digest('SHA-256',buf);
+    return [...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,32);
+  }catch(_){try{return 'f'+file.size+'_'+(file.lastModified||0);}catch(__){return null;}}
+}
+function visionCacheGet(hash){try{return JSON.parse(localStorage.getItem('gagebu_vision_cache')||'{}')[hash];}catch(_){return null;}}
+function visionCacheSet(hash,text){try{
+  let c={};try{c=JSON.parse(localStorage.getItem('gagebu_vision_cache')||'{}');}catch(_){}
+  c[hash]=text;const ks=Object.keys(c);while(ks.length>80){delete c[ks.shift()];} // 최근 80장 유지
+  localStorage.setItem('gagebu_vision_cache',JSON.stringify(c));
+}catch(_){}}
 async function visionOCR(file,key){
   const content=await fileToBase64(file);
   const body={requests:[{image:{content},features:[{type:'DOCUMENT_TEXT_DETECTION'}],imageContext:{languageHints:['ko','en']}}]};
@@ -1327,10 +1339,15 @@ async function readImportFiles(fileList){
       _setImportStatus(`${i+1}/${files.length}장 읽는 중…`);
       let text='';
       if(vkey){
-        try{ text=await visionOCR(files[i],vkey); bumpVisionUsage(1); }
-        catch(e){ console.error(e);
-          S.importStatus='구글 비전 오류: '+e.message+' (키·사용량·도메인 제한을 확인하세요)';
-          S.importBusy=false;render();return; }
+        const hash=await imgHash(files[i]);
+        const cached=hash?visionCacheGet(hash):null;
+        if(cached!=null){ text=cached; _setImportStatus(`${i+1}/${files.length}장 (이미 읽은 이미지 → 재사용, 사용량 미차감)`); }
+        else{
+          try{ text=await visionOCR(files[i],vkey); bumpVisionUsage(1); if(hash)visionCacheSet(hash,text); }
+          catch(e){ console.error(e);
+            S.importStatus='구글 비전 오류: '+e.message+' (키·사용량·도메인 제한을 확인하세요)';
+            S.importBusy=false;render();return; }
+        }
       }else{
         let img; try{ img=await preprocessForOCR(files[i]); }catch(_){ img=files[i]; }
         if(worker){
