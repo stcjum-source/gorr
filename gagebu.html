@@ -906,7 +906,7 @@ function importCategory(name){
 function fixDigits(s){return String(s).replace(/[Oo]/g,'0').replace(/[Il|]/g,'1').replace(/[^\d]/g,'');}
 // 한 줄에서 원화 금액을 추출 {sign:'+'|'-', amt, raw}. 없으면 null.
 function lineAmount(line){
-  const m=String(line).match(/([+-]?)\s*([0-9OIl][0-9OIl,.\s]{0,13})\s*원/);
+  const m=String(line).match(/([+-]?)\s*([0-9OIl][0-9OIl,.\s]{0,13})\s*[원웜뭔윈]/);
   if(!m)return null;
   const v=Number(fixDigits(m[2]));
   if(!v||v<10)return null;
@@ -991,19 +991,26 @@ function parseImportText(raw,defaultMonth){
   const lines=String(raw||'').replace(/\r/g,'').split('\n').map(s=>s.replace(/[\u200b\u00a0]/g,' ').trim()).filter(Boolean);
   let month=defaultMonth+1,day=null,start=0,skipped=0;const out=[];
   const defWho=(S.person==='전체'?'권능':S.person);
-  const amountRe=/([+-]?)\s*([0-9OIl][0-9OIl,.\s]{1,14})\s*원?\s*$/i;
+  const amountRe=/([+-]?)\s*([0-9OIl][0-9OIl,.\s]{1,14})\s*[원웜뭔윈]?\s*$/i;
   for(let i=0;i<lines.length;i++){
-    const mon=lines[i].match(/(?:^|\s)(1[0-2]|0?[1-9])\s*월/);if(mon){month=Number(mon[1]);start=i+1;continue;}
-    const dm=lines[i].match(/(?:^|\s)(3[01]|[12]?\d)\s*일/);if(dm){day=Number(dm[1]);start=i+1;continue;}
+    // 날짜 헤더: 금액이 없는 줄에서만 월/일 추출(한 줄에 둘 다 있어도 모두 반영).
+    // "8월 정기결제 -9,900원"처럼 금액이 있는 줄은 헤더로 오인하지 않음.
+    if(!amountRe.test(lines[i])){
+      const mon=lines[i].match(/(?:^|\s)(1[0-2]|0?[1-9])\s*월/);
+      const dm=lines[i].match(/(?:^|\s)(3[01]|[12]?\d)\s*일/);
+      if(mon||dm){if(mon)month=Number(mon[1]);if(dm)day=Number(dm[1]);start=i+1;continue;}
+    }
     const am=lines[i].match(amountRe);if(!am)continue;
     const digits=am[2].replace(/[Oo]/g,'0').replace(/[Il]/g,'1').replace(/[^0-9]/g,'');
     const amt=Number(digits);if(!amt||amt<10)continue;
+    // 이름: 금액과 같은 줄에서 금액 부분을 떼어 우선 사용(가맹점 … 금액 레이아웃). 없으면 이전 줄에서.
+    const sameLine=lines[i].replace(am[0],'').trim();
     const block=lines.slice(start,i);start=i+1;
-    const joined=block.join(' ');
+    const joined=(block.join(' ')+' '+sameLine).trim();
     const financeOnly=/→/.test(joined)&&joined.split('→').every(x=>/(내\s*|은행|뱅크|카드|페이|머니|통장|계좌)/i.test(x));
     if(!day||IMPORT_EXCLUDES.some(re=>re.test(joined))||financeOnly){skipped++;continue;}
     const kind=(am[1]==='+'||(/→\s*내\s*/.test(joined)&&!/내\s*.*→/.test(joined)))?'income':'expense';
-    const name=cleanImportName(block);
+    const name=(/[가-힣A-Za-z]/.test(sameLine)?sameLine:cleanImportName(block)).replace(/[|]/g,' ').trim().slice(0,60)||'내용 미인식';
     const validDate=new Date(YEAR,month-1,day);
     if(validDate.getMonth()!==month-1||validDate.getDate()!==day){skipped++;continue;}
     const date=`${YEAR}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
@@ -1078,20 +1085,76 @@ function readImportTextArea(){
     :'거래를 찾지 못했어요. 날짜·내용·금액이 함께 보이도록 붙여넣어 주세요.';
   render();
 }
+// ── OCR 품질 개선: 이미지 전처리 + 정밀 한글모델 워커(1회 생성·재사용) ──
+let _ocrWorker=null, _ocrProgress=null;
+function _setImportStatus(t){S.importStatus=t;const el=document.querySelector('.import-status');if(el)el.textContent=t;}
+// 정밀(best) 한글 모델 워커. 실패 시 기본(fast) 모델로 폴백. PSM 6·단어간격 보존.
+async function getOcrWorker(){
+  if(_ocrWorker) return _ocrWorker;
+  const mk=async(opts)=>{
+    const w=await Tesseract.createWorker('kor+eng',1,Object.assign({
+      logger:p=>{if(p.status==='recognizing text'&&_ocrProgress)_ocrProgress(p.progress||0);}
+    },opts));
+    await w.setParameters({tessedit_pageseg_mode:'6',preserve_interword_spaces:'1'});
+    return w;
+  };
+  try{ _ocrWorker=await mk({langPath:'https://tessdata.projectnaptha.com/4.0.0_best'}); }
+  catch(e){ console.warn('정밀 한글모델 로드 실패 → 기본 모델 사용',e); _ocrWorker=await mk({}); }
+  return _ocrWorker;
+}
+// 스크린샷 전처리: 확대(작을 때)·흑백·다크모드 자동반전·대비강화 → 한글 인식률 향상
+function preprocessForOCR(file){
+  return new Promise((resolve,reject)=>{
+    const url=URL.createObjectURL(file), img=new Image();
+    img.onload=()=>{
+      try{
+        const minW=1800, scale=(img.width>0&&img.width<minW)?Math.min(3,minW/img.width):1;
+        const w=Math.max(1,Math.round(img.width*scale)), h=Math.max(1,Math.round(img.height*scale));
+        const c=document.createElement('canvas');c.width=w;c.height=h;
+        const ctx=c.getContext('2d');ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+        ctx.drawImage(img,0,0,w,h);
+        const im=ctx.getImageData(0,0,w,h),d=im.data;
+        let sum=0;
+        for(let i=0;i<d.length;i+=4){const g=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];d[i]=d[i+1]=d[i+2]=g;sum+=g;}
+        const dark=(sum/(d.length/4))<115;           // 평균 밝기로 다크모드 추정
+        const contrast=1.4;
+        for(let i=0;i<d.length;i+=4){
+          let g=d[i]; if(dark)g=255-g;               // 다크모드면 반전(검은 글씨·흰 배경)
+          g=(g-128)*contrast+128; g=g<0?0:g>255?255:g;
+          d[i]=d[i+1]=d[i+2]=g;
+        }
+        ctx.putImageData(im,0,0);URL.revokeObjectURL(url);
+        c.toBlob(b=>resolve(b||file),'image/png');
+      }catch(err){URL.revokeObjectURL(url);reject(err);}
+    };
+    img.onerror=e=>{URL.revokeObjectURL(url);reject(e);};
+    img.src=url;
+  });
+}
 async function readImportFiles(fileList){
   const files=[...(fileList||[])].filter(f=>f&&f.type.startsWith('image/'));
   if(!files.length){S.importStatus='이미지 파일을 찾지 못했어요.';render();return;}
   if(!window.Tesseract){S.importStatus='글자 인식 도구를 불러오지 못했어요. 인터넷 연결을 확인해주세요.';render();return;}
-  S.showImport=true;S.importMode='shot';S.importBusy=true;S.importItems=[];S.importSkipped=0;S.importStatus=`${files.length}장 준비 중…`;render();
+  S.showImport=true;S.importMode='shot';S.importBusy=true;S.importItems=[];S.importSkipped=0;S.importStatus=`${files.length}장 준비 중… (첫 인식은 한글모델 다운로드로 조금 걸려요)`;render();
   try{
+    let worker=null;
+    try{ worker=await getOcrWorker(); }
+    catch(e){ console.warn('OCR 워커 생성 실패 → 1회성 인식으로 대체',e); }
     for(let i=0;i<files.length;i++){
-      const result=await Tesseract.recognize(files[i],'kor+eng',{logger:p=>{
-        if(p.status==='recognizing text'){
-          S.importStatus=`${i+1}/${files.length}장 글자 읽는 중 · ${Math.round((p.progress||0)*100)}%`;
-          const el=document.querySelector('.import-status');if(el)el.textContent=S.importStatus;
-        }
-      }});
-      const parsed=parseTransactions(result?.data?.text||'',S.month);
+      _setImportStatus(`${i+1}/${files.length}장 준비 중…`);
+      let img; try{ img=await preprocessForOCR(files[i]); }catch(_){ img=files[i]; }
+      let text='';
+      if(worker){
+        _ocrProgress=fr=>_setImportStatus(`${i+1}/${files.length}장 글자 읽는 중 · ${Math.round(fr*100)}%`);
+        try{ const {data}=await worker.recognize(img); text=data?.text||''; }
+        finally{ _ocrProgress=null; }
+      }else{
+        const result=await Tesseract.recognize(img,'kor+eng',{logger:p=>{
+          if(p.status==='recognizing text')_setImportStatus(`${i+1}/${files.length}장 글자 읽는 중 · ${Math.round((p.progress||0)*100)}%`);
+        }});
+        text=result?.data?.text||'';
+      }
+      const parsed=parseTransactions(text,S.month);
       S.importItems.push(...parsed.items);S.importSkipped+=parsed.skipped;
     }
     S.importStatus=S.importItems.length
