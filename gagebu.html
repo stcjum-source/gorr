@@ -495,7 +495,7 @@ function render(){
       if(M==='shot'){
         const vk=getVisionKey();
         h+=(vk&&!S.visionEdit)
-          ? `<div class="vision-row on"><span>✅ 구글 비전 켜짐 (한글 정확 인식)</span><span><button class="vision-link" onclick="editVisionKey()">키 변경</button> · <button class="vision-link" onclick="clearVisionKey()">삭제</button></span></div>`
+          ? `<div class="vision-row on"><span>✅ 구글 비전 켜짐 · 이번 달 ${visionUsage().count}/${VISION_FREE}장${visionUsage().count>=900?' ⚠️':''}</span><span><button class="vision-link" onclick="editVisionKey()">키 변경</button> · <button class="vision-link" onclick="clearVisionKey()">삭제</button></span></div>`
           : `<div class="vision-row">
               <div style="font-size:11px;color:var(--muted);margin-bottom:5px">한글까지 정확히 읽으려면 <b>구글 비전 API 키</b>를 넣으세요(무료·1회). 안 넣으면 기본 인식으로 동작해요.</div>
               <div style="display:flex;gap:6px">
@@ -1123,6 +1123,11 @@ function setVisionKey(v){try{v&&v.trim()?localStorage.setItem('gagebu_vision_key
 function saveVisionKey(){const el=document.getElementById('visionKeyInput');if(el)setVisionKey(el.value);S.visionEdit=false;render();}
 function editVisionKey(){S.visionEdit=true;render();}
 function clearVisionKey(){if(confirm('구글 비전 키를 삭제할까요? 이후엔 기본 인식으로 돌아갑니다.')){setVisionKey('');S.visionEdit=false;render();}}
+// 구글 비전 무료 한도(월 1,000장) 사용량 추적 — 매월 자동 리셋
+const VISION_FREE=1000;
+function _vmonth(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+function visionUsage(){let u={month:_vmonth(),count:0};try{const s=JSON.parse(localStorage.getItem('gagebu_vision_usage')||'null');if(s&&s.month===_vmonth())u=s;}catch(_){}return u;}
+function bumpVisionUsage(n){const u=visionUsage();u.count+=(n||1);try{localStorage.setItem('gagebu_vision_usage',JSON.stringify(u));}catch(_){}return u;}
 function fileToBase64(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]||'');r.onerror=rej;r.readAsDataURL(file);});}
 async function visionOCR(file,key){
   const content=await fileToBase64(file);
@@ -1186,6 +1191,14 @@ async function readImportFiles(fileList){
   if(!files.length){S.importStatus='이미지 파일을 찾지 못했어요.';render();return;}
   const vkey=getVisionKey();
   if(!vkey&&!window.Tesseract){S.importStatus='글자 인식 도구를 불러오지 못했어요. 인터넷 연결을 확인해주세요.';render();return;}
+  // 구글 비전 무료 한도 경고: 이번 배치로 월 1,000장을 넘게 되면 넣기 전에 확인
+  if(vkey){
+    const u=visionUsage(), willBe=u.count+files.length;
+    if(willBe>VISION_FREE){
+      const ok=confirm(`⚠️ 이번 달 구글 비전 무료 1,000장을 넘게 됩니다.\n\n현재 ${u.count}장 사용 · 이번 ${files.length}장 추가 → ${willBe}장\n1,000장 초과분은 구글에서 소액 과금될 수 있어요.\n\n계속할까요?`);
+      if(!ok){S.importStatus=`취소했어요. (이번 달 ${u.count}/1000장)`;render();return;}
+    }
+  }
   S.showImport=true;S.importMode='shot';S.importBusy=true;S.importItems=[];S.importSkipped=0;S.importRaw='';
   S.importStatus=vkey?`${files.length}장 구글 비전으로 읽는 중…`:`${files.length}장 준비 중… (첫 인식은 한글모델 다운로드로 조금 걸려요)`;render();
   try{
@@ -1195,7 +1208,7 @@ async function readImportFiles(fileList){
       _setImportStatus(`${i+1}/${files.length}장 읽는 중…`);
       let text='';
       if(vkey){
-        try{ text=await visionOCR(files[i],vkey); }
+        try{ text=await visionOCR(files[i],vkey); bumpVisionUsage(1); }
         catch(e){ console.error(e);
           S.importStatus='구글 비전 오류: '+e.message+' (키·사용량·도메인 제한을 확인하세요)';
           S.importBusy=false;render();return; }
@@ -1216,9 +1229,11 @@ async function readImportFiles(fileList){
       const parsed=parseTransactions(text,S.month);
       S.importItems.push(...parsed.items);S.importSkipped+=parsed.skipped;
     }
-    S.importStatus=S.importItems.length
+    let near='';
+    if(vkey){const u=visionUsage();if(u.count>=VISION_FREE)near=` ⚠️ 이번 달 무료 1,000장 초과(${u.count}장) — 초과분 과금 주의.`;else if(u.count>=900)near=` ⚠️ 이번 달 ${u.count}/1000장 — 무료 한도 임박.`;}
+    S.importStatus=(S.importItems.length
       ?`${S.importItems.length}건을 찾았어요.${S.importSkipped?` 취소·충전 등 ${S.importSkipped}건은 제외했어요.`:''} 등록 전에 수정하세요.`
-      :'등록할 거래를 찾지 못했어요. 아래 "인식 원문 보기"를 확인해주세요.';
+      :'등록할 거래를 찾지 못했어요. 아래 "인식 원문 보기"를 확인해주세요.')+near;
   }catch(e){console.error(e);S.importStatus='스크린샷을 읽지 못했어요. 잠시 후 다시 시도해주세요.';}
   S.importBusy=false;render();
 }
