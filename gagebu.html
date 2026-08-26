@@ -341,6 +341,7 @@ function initFirebase(){
     db.ref(`budgets/${ROOM}`).on('value',s=>{
       liveData=s.val()||{};
       migrateIds();           // id 없는 기존 항목에 id 부여(1회성, 수렴 후 추가 쓰기 없음)
+      syncVisionKeyToRoom();  // 로컬에만 있는 비전 키를 방으로 자동 이전(전 기기 공유)
       if(!S.showForm&&!S.showIncForm) render();
     });
   });
@@ -1220,6 +1221,14 @@ function setVisionKey(v){
   const val=(v||'').trim();
   try{val?localStorage.setItem('gagebu_vision_key',val):localStorage.removeItem('gagebu_vision_key');}catch(_){}
   if(typeof fbSet==='function') fbSet('visionKey',val); // 방 공유 저장(다른 기기 자동 동기화)
+}
+// 로컬에만 있는 비전 키를 방으로 1회 자동 이전 (기존에 로컬 저장했던 키를 전 기기 공유로 승격)
+function syncVisionKeyToRoom(){
+  try{
+    const local=(localStorage.getItem('gagebu_vision_key')||'').trim();
+    const room=(liveData&&typeof liveData['visionKey']==='string')?liveData['visionKey'].trim():'';
+    if(local&&!room&&db&&ROOM){liveData['visionKey']=local;db.ref(`budgets/${ROOM}/visionKey`).set(local);}
+  }catch(_){}
 }
 function saveVisionKey(){const el=document.getElementById('visionKeyInput');if(el)setVisionKey(el.value);S.visionEdit=false;render();}
 function editVisionKey(){S.visionEdit=true;render();}
