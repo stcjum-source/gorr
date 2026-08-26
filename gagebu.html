@@ -110,8 +110,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif;font
 .import-raw summary{cursor:pointer;padding:4px 0}
 .import-raw pre{white-space:pre-wrap;word-break:break-all;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px;max-height:220px;overflow:auto;font-size:11px;line-height:1.5}
 .import-preview{margin-top:10px;border-top:1px solid var(--border)}
-.batch-panel .ii-del{flex-shrink:0;width:32px;border:1px solid var(--border2);border-radius:var(--r-sm);background:var(--bg);color:var(--text2);cursor:pointer;font-size:14px;line-height:1}
+.batch-panel .import-top{grid-template-columns:1fr auto}
+.batch-panel .ii-name{padding:8px 10px;font-size:13px}
+.batch-panel .ii-del{flex-shrink:0;width:34px;height:34px;border:1px solid var(--border2);border-radius:var(--r-sm);background:var(--bg);color:var(--text2);cursor:pointer;font-size:14px;line-height:1}
 .add-row-btn{width:100%;margin-top:8px;padding:9px;border:1.5px dashed var(--border2);border-radius:var(--r-sm);background:var(--bg2);color:var(--accent);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.add-btn.on{background:var(--accent);color:var(--bg)}
+.sel-bar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:6px 0 10px;padding:9px 12px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px}
+.add-btn.del{background:#e5484d;color:#fff;border-color:#e5484d}
+.expense-item.selmode{cursor:pointer;align-items:center}
+.expense-item.selon{background:var(--bg2)}
+.sel-box{width:20px;height:20px;flex-shrink:0;margin-right:10px;accent-color:var(--accent)}
 .import-item{display:block;padding:9px 0;border-bottom:1px solid var(--border);font-size:12px}
 .import-item:last-child{border-bottom:none}
 .import-item input[type=checkbox]{width:17px;height:17px}
@@ -140,7 +148,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif;font
 .yr-bar-bg{background:var(--bg3);border-radius:3px;height:6px;overflow:hidden}
 .yr-bar-fill{height:100%;background:var(--red);opacity:.75;border-radius:3px}
 .yr-delta{font-size:11px;margin-left:6px}
-.fav-bar{display:flex;align-items:center;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0 10px}
+.fav-bar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:2px 0 10px}
 .fav-bar::-webkit-scrollbar{display:none}
 .fav-lead{flex-shrink:0;font-size:11px;color:var(--text2);font-weight:600}
 .fav-chip{flex-shrink:0;white-space:nowrap;padding:6px 11px;border:1px solid var(--border2);border-radius:99px;background:var(--bg);color:var(--text);font-size:12px;cursor:pointer;font-family:inherit}
@@ -350,7 +358,7 @@ function migrateIds(){
 }
 
 const today=new Date();
-let S={month:today.getMonth(),view:'list',person:'권능',showForm:false,editId:null,addingCat:false,showIncForm:false,incEditId:null,showImport:false,importMode:'shot',importText:'',importBusy:false,importStatus:'',importItems:[],importSkipped:0,importRaw:'',visionEdit:false,prefill:null,favEdit:false,batchRows:null};
+let S={month:today.getMonth(),view:'list',person:'권능',showForm:false,editId:null,addingCat:false,showIncForm:false,incEditId:null,showImport:false,importMode:'shot',importText:'',importBusy:false,importStatus:'',importItems:[],importSkipped:0,importRaw:'',visionEdit:false,prefill:null,favEdit:false,batchRows:null,selMode:false,selIds:[]};
 
 const INC_TYPES=['권능 월급','가영 월급','부수입 (권능)','부수입 (가영)','기타'];
 
@@ -483,9 +491,10 @@ function render(){
       h+=`<button class="prevcopy-btn" onclick="copyPrevMonth()">📥 ${MONTHS[S.month-1]} 지출 ${getExps(S.month-1).length}건을 ${MONTHS[S.month]}로 복사</button>`;
     }
 
-    h+=`<div class="sec-title"><span>${S.person} 지출 <span id="listCount">${curList.length}건</span></span><span style="display:flex;gap:6px"><button class="add-btn" onclick="toggleImport()">📥 가져오기</button><button class="add-btn" onclick="openBatch()">📝 여러건</button><button class="add-btn" onclick="openForm(null)">+ 추가</button></span></div>`;
+    h+=`<div class="sec-title"><span>${S.person} 지출 <span id="listCount">${curList.length}건</span></span><span style="display:flex;gap:6px">${curList.length?`<button class="add-btn ${S.selMode?'on':''}" onclick="toggleSelMode()">${S.selMode?'선택 취소':'☑︎ 선택삭제'}</button>`:''}<button class="add-btn" onclick="toggleImport()">📥 가져오기</button><button class="add-btn" onclick="openBatch()">📝 여러건</button><button class="add-btn" onclick="openForm(null)">+ 추가</button></span></div>`;
     h+=favBarHtml('expense');
     if(S.batchRows) h+=batchPanelHtml();
+    if(S.selMode) h+=`<div class="sel-bar"><span>${S.selIds.length}개 선택됨</span><span style="display:flex;gap:6px"><button class="add-btn" onclick="selAllCur()">전체선택</button><button class="add-btn del" onclick="delSelected()">선택 삭제</button></span></div>`;
 
     if(S.showImport){
       const M=S.importMode;
@@ -562,7 +571,9 @@ function render(){
       sortedCur.forEach(e=>{
         if(S.showForm && S.editId===e.id){h+=expFormHtml(e,true);return;}
         const neg=Number(e.amt)<0;
-        h+=`<div class="expense-item" data-s="${esc(((e.name||'')+' '+(e.cat||'')).toLowerCase())}" data-cat="${esc(e.cat||'')}">
+        const seld=S.selIds.includes(e.id);
+        h+=`<div class="expense-item ${S.selMode?'selmode':''} ${seld?'selon':''}" data-s="${esc(((e.name||'')+' '+(e.cat||'')).toLowerCase())}" data-cat="${esc(e.cat||'')}" ${S.selMode?`onclick="toggleSel('${e.id}')"`:''}>
+          ${S.selMode?`<input type="checkbox" class="sel-box" ${seld?'checked':''} onclick="event.stopPropagation();toggleSel('${e.id}')">`:''}
           <div class="exp-left">
             <div class="exp-cat">${esc(e.cat)}</div>
             <div class="exp-name">${esc(e.name||'(내용 없음)')}</div>
@@ -1011,10 +1022,43 @@ function parseTransactions(raw,defaultMonth){
   const lines=String(raw||'').replace(/\r/g,'').split('\n').map(s=>s.replace(/[​ ]/g,' ').trim()).filter(Boolean);
   const all=lines.join(' ');
   if(/머니\s*\+?\s*포인트\s*결제|이벤트\s*결제|결제\s*취소/.test(all)&&/20\d{2}\s*[.\-]/.test(all))return parseSamsung(lines);
-  // 카카오페이 전용 마커(페이머니)가 있을 때만 카카오 파서. "N일 요일" 헤더만 있는
-  // 카드앱(뱅크샐러드 등, 금액 위·이름 아래)은 generic 파서가 더 정확히 처리한다.
+  // 카드앱(뱅크샐러드 등): "가맹점 | 카드" 줄 + "N일 요일" 헤더. 금액 위·이름 아래 구조라 전용 파서.
+  if(/(동백전\s*체크카드|BC\s*바로\s*ZONE\s*카드|현대카드\s*ZERO|토스뱅크\s*체크카드|쿠팡\s*와우\s*카드|K-?패스\(신용\))/.test(all)&&/\d{1,2}\s*일\s*(월|화|수|목|금|토|일)요일/.test(all))return parseCardApp(lines,defaultMonth);
+  // 카카오페이 전용 마커(페이머니)가 있을 때만 카카오 파서.
   if(/카카오페이머니|[·・]\s*페이머니/.test(all))return parseKakao(lines,defaultMonth);
   return parseImportText(raw,defaultMonth);
+}
+// 카드앱(뱅크샐러드 등): 로고글자→금액→"가맹점 | 카드" 순. "가맹점|카드" 줄을 앵커로 삼고
+// 그 위에서 금액을 찾는다(로고·설명 줄은 건너뜀). 취소·해외캐시백은 제외.
+function cardMerchant(line){
+  let s=String(line).split('|')[0];
+  s=s.replace(/\s*(부산\s*동백전\s*체크카드.*|동백전\s*체크카드.*|BC\s*바로\s*ZONE\s*카드.*|현대카드\S*.*|토스뱅크\s*체크카드.*|K-?패스\S*.*|\(신\)\s*쿠팡\s*와우\s*카드.*|쿠팡\s*와우\s*카드.*|와우\s*카드.*|체크카드.*|신용카드.*)$/,'');
+  return s.replace(/\s+/g,' ').trim();
+}
+function isCardNameLine(l){return /(동백전|체크카드|BC\s*바로\s*ZONE|현대카드|토스뱅크\s*체크|쿠팡\s*와우\s*카드|와우\s*카드|K-?패스\(신용\))/.test(l)&&/[가-힣A-Za-z]/.test(l);}
+function parseCardApp(lines,defaultMonth){
+  const out=[];let skipped=0,month=defaultMonth+1,day=null;
+  for(const l of lines){const m=l.match(/(?:^|\s)(1[0-2]|[1-9])\s*월(?:\s|$|[▶>▷▸)])/);if(m){month=Number(m[1]);break;}}
+  for(let i=0;i<lines.length;i++){
+    const dh=lines[i].match(/^(\d{1,2})\s*일\s*(월|화|수|목|금|토|일)요일/);
+    if(dh){day=Number(dh[1]);continue;}
+    if(!isCardNameLine(lines[i]))continue;
+    if(/취소/.test(lines[i])){skipped++;continue;}
+    let amt=0;
+    for(let j=i-1;j>=0&&j>=i-4;j--){
+      if(/^(\d{1,2})\s*일\s*(월|화|수|목|금|토|일)요일/.test(lines[j]))break;
+      if(isCardNameLine(lines[j]))break;
+      const a=lineAmount(lines[j]);if(a){amt=a.amt;break;}
+      // '원' 없는 금액(해외결제 등: "-33,835") 대비: 가장 가까운 콤마 숫자(1,000+)
+      const b=lines[j].match(/(?:^|[^\d])(\d{1,3}(?:,\d{3})+)(?!\d)/);if(b){amt=Number(b[1].replace(/,/g,''));break;}
+    }
+    const name=cardMerchant(lines[i]);
+    if(!amt||!day||!name){skipped++;continue;}
+    const date=mkDate(YEAR,month,day);
+    if(!date){skipped++;continue;}
+    out.push(mkItem(date,name,amt,'expense'));
+  }
+  return {items:out,skipped};
 }
 // 삼성월렛/삼성페이: [가맹점] -금액원 / YYYY.M.D. 오후 h:mm:ss / 이벤트 결제 / 머니+포인트 결제
 function parseSamsung(lines){
@@ -1345,6 +1389,22 @@ function saveExp(){
 function delExp(id){
   if(!confirm('삭제할까요?'))return;
   applyExps(S.month,arr=>arr.filter(x=>x.id!==id));render();
+}
+// 여러 개 선택 삭제
+function toggleSelMode(){S.selMode=!S.selMode;S.selIds=[];S.showForm=false;S.showImport=false;S.batchRows=null;render();}
+function toggleSel(id){const i=S.selIds.indexOf(id);if(i<0)S.selIds.push(id);else S.selIds.splice(i,1);render();}
+function selAllCur(){
+  const cur=(S.person==='전체')?getExps(S.month):getExps(S.month).filter(e=>e.who===S.person);
+  const ids=cur.map(e=>e.id);
+  S.selIds=(S.selIds.length===ids.length)?[]:ids; // 다시 누르면 전체 해제
+  render();
+}
+function delSelected(){
+  if(!S.selIds.length){alert('삭제할 항목을 선택해주세요');return;}
+  if(!confirm(`선택한 ${S.selIds.length}건을 삭제할까요?`))return;
+  const del=new Set(S.selIds);
+  applyExps(S.month,arr=>arr.filter(x=>!del.has(x.id)));
+  const n=S.selIds.length;S.selMode=false;S.selIds=[];render();toast(`${n}건 삭제했어요.`);
 }
 function previewFixed(){
   let fSum=0,sSum=0;
