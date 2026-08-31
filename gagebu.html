@@ -144,6 +144,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif;font
 .sm-brk .row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
 .sm-brk .row:last-child{border-bottom:none}
 .sm-brk .row.muted{color:var(--text3);justify-content:center}
+.sm-brk .row.clickable{cursor:pointer}
+.sm-brk .row.clickable span{font-weight:600}
+.sm-sub{background:var(--bg2);border-radius:8px;margin:0 -4px 6px;padding:2px 10px}
+.sm-subrow{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--text2)}
+.sm-subrow:last-child{border-bottom:none}
+.sm-subrow b{color:var(--text);font-weight:700}
+.sm-subrow.muted{justify-content:center;color:var(--text3)}
 .sm-bar{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .sm-bar .b{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:11px;text-align:center}
 .sm-bar .b.clickable{cursor:pointer;border-style:dashed;border-color:var(--accent)}
@@ -388,7 +395,7 @@ function migrateIds(){
 }
 
 const today=new Date();
-let S={month:today.getMonth(),view:'list',person:'권능',showForm:false,editId:null,addingCat:false,showIncForm:false,incEditId:null,showImport:false,importMode:'shot',importText:'',importBusy:false,importStatus:'',importItems:[],importSkipped:0,importRaw:'',visionEdit:false,prefill:null,favEdit:false,batchRows:null,selMode:false,selIds:[]};
+let S={month:today.getMonth(),view:'list',person:'권능',showForm:false,editId:null,addingCat:false,showIncForm:false,incEditId:null,showImport:false,importMode:'shot',importText:'',importBusy:false,importStatus:'',importItems:[],importSkipped:0,importRaw:'',visionEdit:false,prefill:null,favEdit:false,batchRows:null,selMode:false,selIds:[],smOpen:{}};
 
 const INC_TYPES=['권능 월급','가영 월급','부수입 (권능)','부수입 (가영)','기타'];
 
@@ -841,39 +848,54 @@ function editAsset(){
   const cur=getAsset();
   const v=prompt('총자산(부동산 제외 현금성 자산)을 숫자로 입력하세요.\n예: 144950001',cur||'');
   if(v==null)return;
-  fbSet('asset',Number(String(v).replace(/[^\d.-]/g,''))||0);render();
+  const digits=String(v).replace(/[^\d]/g,'');            // 숫자만 허용(음수·기호 무시)
+  if(digits===''){alert('숫자만 입력해주세요.');return;}
+  fbSet('asset',Math.min(Number(digits),1e15));render();
 }
 function getFamilyNote(){return (liveData&&typeof liveData['famNote']==='string')?liveData['famNote']:'';}
 function editFamilyNote(){
   const v=prompt('가족 메모(선택) — 예: 육아휴직 중·아이 1명',getFamilyNote());
   if(v==null)return;fbSet('famNote',String(v).slice(0,40));render();
 }
+function smToggle(el){const k=el&&el.dataset&&el.dataset.smkey;if(!k)return;S.smOpen[k]=!S.smOpen[k];render();}
 function summaryHtml(m,incArr,exps,totalInc,FT,ST,totalVar,bal){
+  incArr=Array.isArray(incArr)?incArr:[]; exps=Array.isArray(exps)?exps:[];
   const gojeong=FT, byeondong=totalVar, spend=gojeong+byeondong, remain=totalInc-spend;
-  const rate=totalInc>0?(remain/totalInc*100):0, spendPct=totalInc>0?(spend/totalInc*100):0;
-  const money=n=>'₩'+Math.round(n).toLocaleString('ko-KR');
-  const incMap={};incArr.forEach(i=>{const t=i.type||'기타';incMap[t]=(incMap[t]||0)+(Number(i.amt)||0);});
+  const pct=(part)=>totalInc>0?(part/totalInc*100).toFixed(1):'—';
+  const rateStr=totalInc>0?pct(remain)+'%':'—', spendPctStr=totalInc>0?(spend/totalInc*100).toFixed(0)+'%':'—';
+  const money=n=>'₩'+(Number.isFinite(Number(n))?Math.round(Number(n)):0).toLocaleString('ko-KR');
+  const catOf=e=>String(e&&e.cat!=null&&e.cat!==''?e.cat:'기타'); // 집계·드릴다운 동일 정규화
+  const incMap=Object.create(null);incArr.forEach(i=>{const t=String(i&&i.type?i.type:'기타');incMap[t]=(incMap[t]||0)+(Number(i&&i.amt)||0);});
   const incRows=Object.entries(incMap).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]);
-  const fixedItems=getFixedForMonth(m).filter(i=>Number(i.amt)>0).sort((a,b)=>b.amt-a.amt);
-  const catMap={};exps.forEach(e=>{catMap[e.cat]=(catMap[e.cat]||0)+(Number(e.amt)||0);});
+  const fixedItems=(Array.isArray(getFixedForMonth(m))?getFixedForMonth(m):[]).filter(i=>Number(i.amt)>0).sort((a,b)=>b.amt-a.amt);
+  const catMap=Object.create(null);exps.forEach(e=>{const c=catOf(e);catMap[c]=(catMap[c]||0)+(Number(e&&e.amt)||0);});
   const catRows=Object.entries(catMap).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]);
   const asset=getAsset(), note=getFamilyNote();
   let x=`<div class="sm">`;
   x+=`<div class="sm-top"><b>${YEAR}년 ${MONTHS[m]}</b> 머니 플로우 ${note?`· <span class="sm-note">${esc(note)}</span>`:''} <button class="vision-link" onclick="editFamilyNote()">메모</button></div>`;
-  x+=`<div class="sm-hero"><div class="l">🐷 이번 달 잔여 자금</div><div class="big">${money(remain)}</div><div class="rate">저축률 <b>${rate.toFixed(1)}%</b></div></div>`;
+  x+=`<div class="sm-hero"><div class="l">🐷 이번 달 잔여 자금</div><div class="big">${money(remain)}</div><div class="rate">저축률 <b>${rateStr}</b></div></div>`;
   x+=`<div class="sm-flow"><div class="sm-col"><div class="sm-lab in">수입</div>`;
   x+= incRows.length?incRows.map(([t,v])=>`<div class="sm-node in"><span>${esc(t)}</span><b>${money(v)}</b></div>`).join(''):`<div class="sm-node muted"><span>수입 없음</span></div>`;
   x+=`</div><div class="sm-hub"><div class="n">총수입</div><div class="v">${money(totalInc)}</div></div>`;
   x+=`<div class="sm-col"><div class="sm-lab out">지출</div><div class="sm-grp"><span>🏠 고정비</span><b>${money(gojeong)}</b></div><div class="sm-grp"><span>🛒 변동비</span><b>${money(byeondong)}</b></div></div></div>`;
   x+=`<div class="sm-brk"><div class="hd">🏠 고정비 상세</div>`;
   x+= fixedItems.length?fixedItems.map(i=>`<div class="row"><span>${esc(i.name)}</span><b>${money(i.amt)}</b></div>`).join(''):`<div class="row muted"><span>고정지출 항목 없음 (고정 탭에서 추가)</span></div>`;
-  x+=`</div><div class="sm-brk"><div class="hd">🛒 변동비 상세 (카테고리별)</div>`;
-  x+= catRows.length?catRows.map(([c,v])=>`<div class="row"><span>${esc(c)}</span><b>${money(v)}</b></div>`).join(''):`<div class="row muted"><span>지출 내역 없음</span></div>`;
+  x+=`</div><div class="sm-brk"><div class="hd">🛒 변동비 상세 (카테고리별 · 눌러서 내역 보기)</div>`;
+  if(catRows.length){
+    catRows.forEach(([c,v])=>{
+      const key=m+'|cat|'+c, open=!!S.smOpen[key];
+      x+=`<div class="row clickable" data-smkey="${esc(key)}" onclick="smToggle(this)"><span>${open?'▾':'▸'} ${esc(c)}</span><b>${money(v)}</b></div>`;
+      if(open){
+        const items=exps.filter(e=>catOf(e)===c).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+        x+=`<div class="sm-sub">`+(items.length?items.map(e=>`<div class="sm-subrow"><span>${esc((e.date||'').slice(5))} ${esc(e.name||'(내용 없음)')}${e.who?` · ${esc(e.who)}`:''}</span><b>${money(e.amt)}</b></div>`).join(''):`<div class="sm-subrow muted"><span>내역 없음</span></div>`)+`</div>`;
+      }
+    });
+  }else x+=`<div class="row muted"><span>지출 내역 없음</span></div>`;
   x+=`</div>`;
   if(ST>0) x+=`<div class="sm-brk"><div class="row"><span>💰 이번 달 저축 계획(고정)</span><b>${money(ST)}</b></div></div>`;
   x+=`<div class="sm-bar">
     <div class="b"><div class="n">💰 총수입</div><div class="v blue">${money(totalInc)}</div></div>
-    <div class="b"><div class="n">🛒 총지출 (${spendPct.toFixed(0)}%)</div><div class="v red">${money(spend)}</div></div>
+    <div class="b"><div class="n">🛒 총지출 (${spendPctStr})</div><div class="v red">${money(spend)}</div></div>
     <div class="b"><div class="n">🐷 이번 달 잔여</div><div class="v green">${money(remain)}</div></div>
     <div class="b clickable" onclick="editAsset()"><div class="n">🏛️ 총자산 ✎</div><div class="v purple">${asset>0?money(asset):'입력하기'}</div></div>
   </div></div>`;
