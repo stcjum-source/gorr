@@ -2,6 +2,9 @@
   "name": "gorr-auto-record",
   "version": "1.0.0",
   "private": true,
+  "scripts": {
+    "update-symbols": "node scripts/update-asset-symbols.js"
+  },
   "engines": {
     "node": ">=18"
   },

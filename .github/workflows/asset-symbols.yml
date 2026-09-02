@@ -1,0 +1,41 @@
+name: 자산 검색 목록 갱신
+
+on:
+  schedule:
+    - cron: '20 22 * * 1-5' # 평일 07:20 KST
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: asset-symbol-catalog
+  cancel-in-progress: true
+
+jobs:
+  update-symbols:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 20 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 검색 목록 생성
+        run: node scripts/update-asset-symbols.js
+
+      - name: 변경된 목록 저장
+        run: |
+          if git diff --quiet -- asset-symbols.json; then
+            echo "검색 목록 변경 없음"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add asset-symbols.json
+          git commit -m "Update asset symbol catalog"
+          git push

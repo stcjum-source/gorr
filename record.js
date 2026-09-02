@@ -11,7 +11,7 @@
 
 'use strict';
 
-const ROOM   = '2402';
+const ROOM   = process.env.ASSET_ROOM || '2402';
 const DB_URL = 'https://gorr-66f73-default-rtdb.firebaseio.com';
 const ETF_TICKER_FIX = {
   '243890.KS': '0163Y0.KS',
@@ -185,7 +185,7 @@ async function fetchStooqPrice(ticker) {
 }
 
 // { price, source } 형태로 반환 — 어느 소스가 성공했는지 로깅용
-async function fetchStockPrice(ticker) {
+async function fetchStockPrice(ticker, hint = {}) {
   // 국내 (KS/KQ) → 네이버, 실패 시 Yahoo
   if (ticker.endsWith('.KS') || ticker.endsWith('.KQ')) {
     const code = ticker.replace('.KS', '').replace('.KQ', '');
@@ -196,18 +196,22 @@ async function fetchStockPrice(ticker) {
     return { price: null, source: null };
   }
   // 미국 → 네이버 해외시세 → Yahoo → Stooq 백업
-  const naver = NAVER_US[ticker];
+  const naver = hint.naverCode
+    ? { code: hint.naverCode, type: hint.naverType || 'stock' }
+    : NAVER_US[ticker];
   if (naver) {
     const d = await fetchJSON(`https://polling.finance.naver.com/api/realtime/worldstock/${naver.type}/${naver.code}`);
     const p = Number(d?.datas?.[0]?.closePriceRaw || String(d?.datas?.[0]?.closePrice || '').replace(/,/g, ''));
     if (p > 0) return { price: p, source: 'naver-world' };
   } else if (/^[A-Z][A-Z0-9.-]*$/.test(ticker)) {
-    // 신규 미국 주식도 Yahoo로 바로 넘기지 않고 NASDAQ(.O)/NYSE(.K)를 한 번에 확인한다.
+    // 신규 미국 주식/ETF도 Yahoo로 바로 넘기지 않고 NASDAQ(.O)/NYSE(.K)를 자동 확인한다.
     const codes = `${ticker}.O,${ticker}.K`;
-    const d = await fetchJSON(`https://polling.finance.naver.com/api/realtime/worldstock/stock/${codes}`);
-    const row = d?.datas?.find(item => item.symbolCode === ticker);
-    const p = Number(row?.closePriceRaw || String(row?.closePrice || '').replace(/,/g, ''));
-    if (p > 0) return { price: p, source: 'naver-world-auto' };
+    for (const type of ['stock', 'etf']) {
+      const d = await fetchJSON(`https://polling.finance.naver.com/api/realtime/worldstock/${type}/${codes}`);
+      const row = d?.datas?.find(item => item.symbolCode === ticker);
+      const p = Number(row?.closePriceRaw || String(row?.closePrice || '').replace(/,/g, ''));
+      if (p > 0) return { price: p, source: `naver-world-auto-${type}` };
+    }
   }
   const y = await fetchYahooPrice(ticker);
   if (y != null) return { price: y, source: 'yahoo' };
@@ -224,11 +228,16 @@ async function fetchNaverUsPrices(items) {
 
   for (const item of items) {
     if (item.manual || item.ticker.endsWith('.KS') || item.ticker.endsWith('.KQ')) continue;
-    const known = NAVER_US[item.ticker];
+    const known = item.naverCode
+      ? { code: item.naverCode, type: item.naverType || 'stock' }
+      : NAVER_US[item.ticker];
     if (known) {
       groups[known.type].push({ ticker: item.ticker, codes: [known.code] });
     } else if (/^[A-Z][A-Z0-9.-]*$/.test(item.ticker)) {
-      groups.stock.push({ ticker: item.ticker, codes: [`${item.ticker}.O`, `${item.ticker}.K`] });
+      const entry = { ticker: item.ticker, codes: [`${item.ticker}.O`, `${item.ticker}.K`] };
+      // 종류를 미리 하드코딩하지 않아도 되도록 신규 티커는 주식/ETF 양쪽에서 확인한다.
+      groups.stock.push(entry);
+      groups.etf.push(entry);
     }
   }
 
@@ -374,7 +383,7 @@ async function main() {
   }
   await Promise.allSettled(
     tradeItems.filter(item => !freshKeys.has(item.ticker)).map(async item => {
-      const { price, source } = await fetchStockPrice(item.ticker);
+      const { price, source } = await fetchStockPrice(item.ticker, item);
       if (price != null) {
         prices[item.ticker] = price;
         freshKeys.add(item.ticker);
