@@ -17,7 +17,9 @@ const US_ALIASES = {
 async function fetchText(url) {
   const response = await fetch(url, { headers: { 'User-Agent': 'gorr-asset-catalog/1.0' } });
   if (!response.ok) throw new Error(`${response.status} ${url}`);
-  return response.text();
+  const contentType = response.headers.get('content-type') || '';
+  const encoding = /euc-kr|ks_c_5601-1987/i.test(contentType) ? 'euc-kr' : 'utf-8';
+  return new TextDecoder(encoding).decode(await response.arrayBuffer());
 }
 
 async function fetchJSON(url) {
