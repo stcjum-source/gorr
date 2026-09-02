@@ -74,12 +74,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif;font
 .expense-item:last-child{border-bottom:none}
 .exp-main{display:flex;align-items:center;gap:11px;padding:12px 14px;cursor:pointer;transition:background .12s}
 .expense-item.actopen .exp-main{background:var(--bg2)}
-.exp-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
 .exp-left{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 .exp-name{font-size:14px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.exp-cat{align-self:flex-start;font-size:10px;font-weight:600;padding:1px 8px;border-radius:99px;line-height:1.5}
+.exp-cat{align-self:flex-start;font-size:10px;font-weight:600;padding:1px 8px;border-radius:99px;line-height:1.5;background:var(--bg2);color:var(--text2)}
+.expense-item.actopen .exp-cat{background:var(--bg)}
 .exp-amt{font-size:15px;font-weight:700;white-space:nowrap;display:flex;align-items:center;gap:5px;color:var(--text);font-variant-numeric:tabular-nums}
-.exp-amt.refund{color:#2b8a3e}
+.exp-amt.refund,.exp-amt.inc{color:var(--green)}
+.exp-cat.inc{background:var(--green-bg);color:var(--green)}
+.dh-sum.inc{color:var(--green)}
 .exp-caret{font-size:9px;color:var(--text3);font-weight:400}
 .exp-actions{display:flex;gap:6px;padding:2px 12px 12px}
 .exp-actions .icon-btn{flex:1;padding:9px 4px;text-align:center;font-weight:600}
@@ -87,12 +89,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif;font
 .icon-btn:active{filter:brightness(.94)}
 .icon-btn.star{color:#b0870a} .icon-btn.copy{color:#1971c2} .icon-btn.edit{color:var(--text)}
 .icon-btn.del{color:#e5484d;background:var(--red-bg);border-color:transparent}
-/* 카테고리 색상 팔레트 (라이트) */
-.cc0{background:#ffe3e3;color:#c92a2a}.cc1{background:#ffe8cc;color:#d9480f}.cc2{background:#d3f9d8;color:#2b8a3e}.cc3{background:#c3fae8;color:#087f5b}.cc4{background:#d0ebff;color:#1971c2}.cc5{background:#dbe4ff;color:#3b5bdb}.cc6{background:#f3d9fa;color:#9c36b5}.cc7{background:#ffdeeb;color:#c2255c}
-.exp-dot.cc0{background:#fa5252}.exp-dot.cc1{background:#ff922b}.exp-dot.cc2{background:#40c057}.exp-dot.cc3{background:#20c997}.exp-dot.cc4{background:#4dabf7}.exp-dot.cc5{background:#5c7cfa}.exp-dot.cc6{background:#cc5de8}.exp-dot.cc7{background:#f06595}
-@media(prefers-color-scheme:dark){
-.cc0{background:#3a2222;color:#ff8f8f}.cc1{background:#3a2a1a;color:#ffb066}.cc2{background:#1d3a24;color:#8ce99a}.cc3{background:#123a30;color:#63e6be}.cc4{background:#12314d;color:#82c7ff}.cc5{background:#1f2747;color:#94a8ff}.cc6{background:#33203a;color:#e19bf0}.cc7{background:#3a1f2a;color:#ff9ac0}
-}
 .empty{text-align:center;padding:36px 16px;color:var(--text3);font-size:13px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r)}
 .empty-icon{font-size:28px;margin-bottom:8px}
 .cat-wrap{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:14px}
@@ -416,8 +412,6 @@ let S={month:today.getMonth(),view:'list',person:'권능',showForm:false,editId:
 const INC_TYPES=['권능 월급','가영 월급','부수입 (권능)','부수입 (가영)','기타'];
 
 function fmt(n){return Math.abs(Math.round(n)).toLocaleString('ko-KR')+'원';}
-// 카테고리 이름 → 일관된 색상 클래스(cc0~cc7). 커스텀 항목도 자동 배색.
-function catClass(s){let h=0;const t=String(s||'');for(let i=0;i<t.length;i++)h=(h*31+t.charCodeAt(i))>>>0;return 'cc'+(h%8);}
 function fmtS(n){
   const a=Math.abs(Math.round(n)),sg=n<0?'-':'';
   // 만 단위로 표시(억/백만 안 씀). 예: 10,000,000→"1,000만", 12,500,000→"1,250만", 50,000→"5만"
@@ -464,7 +458,7 @@ function render(){
     <div class="card"><div class="card-label">수입 합계</div><div class="card-val">${fmtS(totalInc)}</div><div class="card-sub">${totalInc>0?fmt(totalInc):'수입을 추가해주세요'}</div></div>
     <div class="card"><div class="card-label">고정 + 저축</div><div class="card-val">${fmtS(FT+ST)}</div><div class="card-sub">고정 ${fmtS(FT)} · 저축 ${fmtS(ST)}</div></div>
     <div class="card"><div class="card-label">변동지출</div><div class="card-val">${fmtS(totalVar)}</div><div class="card-sub">${exps.length}건</div></div>
-    <div class="card ${bal>=0?'green':'red'}"><div class="card-label">이달 잔액</div><div class="card-val">${fmtS(bal)}</div><div class="card-sub">${totalInc>0?'저축률 '+(ST/totalInc*100).toFixed(1)+'%':'수입 입력 필요'}</div></div>
+    <div class="card ${(bal+ST)>=0?'green':'red'}"><div class="card-label">이달 잔액+저축</div><div class="card-val">${fmtS(bal+ST)}</div><div class="card-sub">${totalInc>0?'저축률 '+((bal+ST)/totalInc*100).toFixed(1)+'%':'수입 입력 필요'}</div></div>
   </div>`;
   }
   h+=`<div class="toggle-row">
@@ -498,22 +492,33 @@ function render(){
       h+=`<div class="empty"><div class="empty-icon">💰</div>수입 내역을 추가해보세요</div>`;
     }else{
       const sorted=[...incArr].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+      const gI={},oI=[];
+      sorted.forEach(e=>{const d=e.date||'';if(!(d in gI)){gI[d]=[];oI.push(d);}gI[d].push(e);});
       h+=`<div class="expense-list">`;
-      sorted.forEach(e=>{
-        h+=`<div class="expense-item">
-          <div class="exp-left">
-            <div class="exp-cat" style="background:var(--green-bg);color:var(--green)">${esc(e.type)}</div>
-            <div class="exp-name">${esc(e.name||e.type)}</div>
-            <div class="exp-date">${esc(e.date)}</div>
-          </div>
-          <div class="exp-right">
-            <div class="exp-amt" style="color:var(--green)">+${fmt(e.amt)}</div>
-            <button class="icon-btn star" onclick="starInc('${e.id}')" title="자주 쓰기">★</button>
-            <button class="icon-btn copy" onclick="copyInc('${e.id}')" title="복사">⧉</button>
-            <button class="icon-btn" onclick="openIncForm('${e.id}')">수정</button>
-            <button class="icon-btn del" onclick="delInc('${e.id}')">✕</button>
-          </div>
-        </div>`;
+      oI.forEach(d=>{
+        const items=gI[d];
+        const dt=items.reduce((s,e)=>s+(Number(e.amt)||0),0);
+        const p=parseYmd(d), wd=p?new Date(p.y,p.m,p.d).getDay():-1;
+        const wdCls=wd===0?'sun':wd===6?'sat':'';
+        h+=`<div class="day-head"><span class="dh-day ${wdCls}">${esc(dayLabel(d))}</span><span class="dh-sum inc">+${fmt(dt)}</span></div>`;
+        items.forEach(e=>{
+          const open=(S.expOpen===e.id);
+          h+=`<div class="expense-item ${open?'actopen':''}">
+            <div class="exp-main" onclick="toggleExpActions('${e.id}')">
+              <div class="exp-left">
+                <div class="exp-name">${esc(e.name||e.type)}</div>
+                <span class="exp-cat inc">${esc(e.type)}</span>
+              </div>
+              <div class="exp-amt inc">+${fmt(e.amt)}<span class="exp-caret">${open?'▲':'▾'}</span></div>
+            </div>
+            ${open?`<div class="exp-actions">
+              <button class="icon-btn star" onclick="starInc('${e.id}')">⭐ 자주</button>
+              <button class="icon-btn copy" onclick="copyInc('${e.id}')">⧉ 복제</button>
+              <button class="icon-btn edit" onclick="openIncForm('${e.id}')">✏️ 수정</button>
+              <button class="icon-btn del" onclick="delInc('${e.id}')">🗑 삭제</button>
+            </div>`:''}
+          </div>`;
+        });
       });
       h+=`</div>`;
     }
@@ -644,10 +649,9 @@ function render(){
           h+=`<div class="expense-item ${S.selMode?'selmode':''} ${seld?'selon':''} ${open?'actopen':''}" data-s="${esc(((e.name||'')+' '+(e.cat||'')).toLowerCase())}" data-cat="${esc(e.cat||'')}" data-date="${esc(d)}">
             <div class="exp-main" onclick="${S.selMode?`toggleSel('${e.id}')`:`toggleExpActions('${e.id}')`}">
               ${S.selMode?`<input type="checkbox" class="sel-box" ${seld?'checked':''} onclick="event.stopPropagation();toggleSel('${e.id}')">`:''}
-              <span class="exp-dot ${catClass(e.cat)}"></span>
               <div class="exp-left">
                 <div class="exp-name">${esc(e.name||'(내용 없음)')}</div>
-                <span class="exp-cat ${catClass(e.cat)}">${esc(e.cat)}</span>
+                <span class="exp-cat">${esc(e.cat)}</span>
               </div>
               <div class="exp-amt ${refund?'refund':''}">${refund?'+':'-'}${fmt(e.amt)}${S.selMode?'':`<span class="exp-caret">${open?'▲':'▾'}</span>`}</div>
             </div>
