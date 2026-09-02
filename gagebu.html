@@ -66,23 +66,33 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif;font
 .btn-save{flex:1;padding:10px;background:var(--accent);color:var(--bg);border:none;border-radius:var(--r-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
 .btn-cancel{padding:10px 15px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;cursor:pointer;color:var(--text2);font-family:inherit}
 .expense-list{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
-.day-head{display:flex;justify-content:space-between;align-items:center;padding:8px 13px;background:var(--bg2);border-bottom:1px solid var(--border);font-size:12px;color:var(--text2);font-weight:600}
-.day-head .dh-sum{color:var(--red);font-weight:700}
+.day-head{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;background:var(--bg2);border-bottom:1px solid var(--border);font-size:12px}
+.day-head .dh-day{color:var(--text);font-weight:700}
+.day-head .dh-day.sun{color:#e5484d} .day-head .dh-day.sat{color:#3b7fe0}
+.day-head .dh-sum{color:var(--text2);font-weight:600;font-variant-numeric:tabular-nums}
 .expense-item{display:block;border-bottom:1px solid var(--border)}
 .expense-item:last-child{border-bottom:none}
-.exp-main{display:flex;justify-content:space-between;align-items:center;padding:11px 13px;cursor:pointer}
+.exp-main{display:flex;align-items:center;gap:11px;padding:12px 14px;cursor:pointer;transition:background .12s}
 .expense-item.actopen .exp-main{background:var(--bg2)}
-.exp-left{flex:1;min-width:0;margin-right:8px}
-.exp-cat{display:inline-block;font-size:10px;padding:2px 8px;border-radius:99px;background:var(--bg2);color:var(--text2);margin-bottom:3px}
-.expense-item.actopen .exp-cat{background:var(--bg)}
-.exp-name{font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.exp-amt{font-size:14px;font-weight:700;white-space:nowrap;display:flex;align-items:center;gap:6px}
-.exp-amt.neg{color:var(--red)}
+.exp-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.exp-left{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.exp-name{font-size:14px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.exp-cat{align-self:flex-start;font-size:10px;font-weight:600;padding:1px 8px;border-radius:99px;line-height:1.5}
+.exp-amt{font-size:15px;font-weight:700;white-space:nowrap;display:flex;align-items:center;gap:5px;color:var(--text);font-variant-numeric:tabular-nums}
+.exp-amt.refund{color:#2b8a3e}
 .exp-caret{font-size:9px;color:var(--text3);font-weight:400}
-.exp-actions{display:flex;gap:6px;padding:0 13px 11px;flex-wrap:wrap}
-.exp-actions .icon-btn{flex:1;min-width:64px;padding:8px 4px;text-align:center}
-.icon-btn{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text2);cursor:pointer;font-size:12px;padding:4px 8px;font-family:inherit}
-.icon-btn.del{color:var(--red);border-color:var(--border)}
+.exp-actions{display:flex;gap:6px;padding:2px 12px 12px}
+.exp-actions .icon-btn{flex:1;padding:9px 4px;text-align:center;font-weight:600}
+.icon-btn{background:var(--bg2);border:1px solid var(--border);border-radius:10px;color:var(--text);cursor:pointer;font-size:12px;padding:5px 9px;font-family:inherit;transition:filter .12s}
+.icon-btn:active{filter:brightness(.94)}
+.icon-btn.star{color:#b0870a} .icon-btn.copy{color:#1971c2} .icon-btn.edit{color:var(--text)}
+.icon-btn.del{color:#e5484d;background:var(--red-bg);border-color:transparent}
+/* 카테고리 색상 팔레트 (라이트) */
+.cc0{background:#ffe3e3;color:#c92a2a}.cc1{background:#ffe8cc;color:#d9480f}.cc2{background:#d3f9d8;color:#2b8a3e}.cc3{background:#c3fae8;color:#087f5b}.cc4{background:#d0ebff;color:#1971c2}.cc5{background:#dbe4ff;color:#3b5bdb}.cc6{background:#f3d9fa;color:#9c36b5}.cc7{background:#ffdeeb;color:#c2255c}
+.exp-dot.cc0{background:#fa5252}.exp-dot.cc1{background:#ff922b}.exp-dot.cc2{background:#40c057}.exp-dot.cc3{background:#20c997}.exp-dot.cc4{background:#4dabf7}.exp-dot.cc5{background:#5c7cfa}.exp-dot.cc6{background:#cc5de8}.exp-dot.cc7{background:#f06595}
+@media(prefers-color-scheme:dark){
+.cc0{background:#3a2222;color:#ff8f8f}.cc1{background:#3a2a1a;color:#ffb066}.cc2{background:#1d3a24;color:#8ce99a}.cc3{background:#123a30;color:#63e6be}.cc4{background:#12314d;color:#82c7ff}.cc5{background:#1f2747;color:#94a8ff}.cc6{background:#33203a;color:#e19bf0}.cc7{background:#3a1f2a;color:#ff9ac0}
+}
 .empty{text-align:center;padding:36px 16px;color:var(--text3);font-size:13px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r)}
 .empty-icon{font-size:28px;margin-bottom:8px}
 .cat-wrap{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:14px}
@@ -406,6 +416,8 @@ let S={month:today.getMonth(),view:'list',person:'권능',showForm:false,editId:
 const INC_TYPES=['권능 월급','가영 월급','부수입 (권능)','부수입 (가영)','기타'];
 
 function fmt(n){return Math.abs(Math.round(n)).toLocaleString('ko-KR')+'원';}
+// 카테고리 이름 → 일관된 색상 클래스(cc0~cc7). 커스텀 항목도 자동 배색.
+function catClass(s){let h=0;const t=String(s||'');for(let i=0;i<t.length;i++)h=(h*31+t.charCodeAt(i))>>>0;return 'cc'+(h%8);}
 function fmtS(n){
   const a=Math.abs(Math.round(n)),sg=n<0?'-':'';
   // 만 단위로 표시(억/백만 안 씀). 예: 10,000,000→"1,000만", 12,500,000→"1,250만", 50,000→"5만"
@@ -621,25 +633,28 @@ function render(){
       order.forEach(d=>{
         const items=groups[d];
         const dtotal=items.reduce((s,e)=>s+(Number(e.amt)||0),0);
-        h+=`<div class="day-head" data-date="${esc(d)}"><span>${esc(dayLabel(d))}</span><span class="dh-sum">-${fmt(dtotal)}</span></div>`;
+        const wdIdx=(()=>{const p=parseYmd(d);return p?new Date(p.y,p.m,p.d).getDay():-1;})();
+        const wdCls=wdIdx===0?'sun':wdIdx===6?'sat':'';
+        h+=`<div class="day-head" data-date="${esc(d)}"><span class="dh-day ${wdCls}">${esc(dayLabel(d))}</span><span class="dh-sum">${dtotal<0?'+':'-'}${fmt(dtotal)}</span></div>`;
         items.forEach(e=>{
           if(S.showForm && S.editId===e.id){h+=expFormHtml(e,true);return;}
-          const neg=Number(e.amt)<0;
+          const refund=Number(e.amt)<0;
           const seld=S.selIds.includes(e.id);
           const open=(S.expOpen===e.id)&&!S.selMode;
           h+=`<div class="expense-item ${S.selMode?'selmode':''} ${seld?'selon':''} ${open?'actopen':''}" data-s="${esc(((e.name||'')+' '+(e.cat||'')).toLowerCase())}" data-cat="${esc(e.cat||'')}" data-date="${esc(d)}">
             <div class="exp-main" onclick="${S.selMode?`toggleSel('${e.id}')`:`toggleExpActions('${e.id}')`}">
               ${S.selMode?`<input type="checkbox" class="sel-box" ${seld?'checked':''} onclick="event.stopPropagation();toggleSel('${e.id}')">`:''}
+              <span class="exp-dot ${catClass(e.cat)}"></span>
               <div class="exp-left">
-                <div><span class="exp-cat">${esc(e.cat)}</span></div>
                 <div class="exp-name">${esc(e.name||'(내용 없음)')}</div>
+                <span class="exp-cat ${catClass(e.cat)}">${esc(e.cat)}</span>
               </div>
-              <div class="exp-amt ${neg?'neg':''}">${neg?'-':''}${fmt(e.amt)}${S.selMode?'':`<span class="exp-caret">${open?'▲':'▾'}</span>`}</div>
+              <div class="exp-amt ${refund?'refund':''}">${refund?'+':'-'}${fmt(e.amt)}${S.selMode?'':`<span class="exp-caret">${open?'▲':'▾'}</span>`}</div>
             </div>
             ${open?`<div class="exp-actions">
               <button class="icon-btn star" onclick="starExp('${e.id}')">⭐ 자주</button>
               <button class="icon-btn copy" onclick="copyExp('${e.id}')">⧉ 복제</button>
-              <button class="icon-btn" onclick="openForm('${e.id}')">✏️ 수정</button>
+              <button class="icon-btn edit" onclick="openForm('${e.id}')">✏️ 수정</button>
               <button class="icon-btn del" onclick="delExp('${e.id}')">🗑 삭제</button>
             </div>`:''}
           </div>`;
