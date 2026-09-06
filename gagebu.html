@@ -10,24 +10,26 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
-  --bg:#fff;--bg2:#f5f5f5;--bg3:#e8e8e8;
-  --text:#1a1a1a;--text2:#666;--text3:#aaa;
-  --border:#e0e0e0;--border2:#ccc;
-  --r:10px;--r-sm:7px;
-  --green-bg:#eaf3de;--green:#3b6d11;
-  --red-bg:#fcebeb;--red:#c0392b;
-  --accent:#2d2d2d;
+  --bg:#fff;--bg2:#f2f4f1;--bg3:#e3e7e3;
+  --text:#17201b;--text2:#6f7972;--text3:#929b95;
+  --border:#dfe5e0;--border2:#bfc8c1;
+  --r:16px;--r-sm:11px;
+  --green-bg:#e9f6ee;--green:#16794b;
+  --red-bg:#fff0ee;--red:#c64138;
+  --blue:#245ac1;--nav:#1f2923;--accent:#16794b;--on-green:#fff;
+  --dock:rgba(255,255,255,.97);--segment:#e3e7e3;--line:#edf0ed;
 }
 @media(prefers-color-scheme:dark){:root{
   --bg:#1c1c1e;--bg2:#2c2c2e;--bg3:#3a3a3c;
-  --text:#f0f0f0;--text2:#aaa;--text3:#555;
+  --text:#f4f6f4;--text2:#b7c0ba;--text3:#8e9991;
   --border:#3a3a3c;--border2:#555;
-  --green-bg:#1a3a12;--green:#8fd46a;
-  --red-bg:#3b1a1a;--red:#e08080;
-  --accent:#e0e0e0;
+  --green-bg:#153629;--green:#72d5a2;
+  --red-bg:#421f20;--red:#ff918a;
+  --blue:#8fb4ff;--nav:#111a15;--accent:#72d5a2;--on-green:#1c1c1e;
+  --dock:rgba(28,28,30,.97);--segment:#343a36;--line:#343a36;
 }}
 body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif;font-size:14px;color:var(--text);background:var(--bg2);min-height:100vh}
-.app{max-width:420px;margin:0 auto;min-height:100vh}
+.app{max-width:420px;margin:0 auto;min-height:100vh;position:relative;background:var(--bg2)}
 .header{background:var(--bg);border-bottom:1px solid var(--border);padding:14px 16px 0;position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,.06)}
 .header h1{font-size:15px;font-weight:600;margin-bottom:12px}
 .month-tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
@@ -208,21 +210,38 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif;font
 .filter-cat{flex-shrink:0;width:110px;padding:8px 8px;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:12px;background:var(--bg);color:var(--text);font-family:inherit;outline:none;-webkit-appearance:none;appearance:none}
 .icon-btn.copy{color:var(--text2)}
 .icon-btn.star{color:#c99700;border-color:transparent}
+/* 승인 시안: mobile Monitor / Operate */
+button,input:not([type=checkbox]):not([type=radio]),select,textarea{min-height:44px}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid color-mix(in srgb,var(--green) 28%,transparent);outline-offset:2px}
+.header{padding:14px 18px 12px;box-shadow:none}
+.appbar-top{display:flex;justify-content:space-between;align-items:center}
+.brand{font-size:17px;font-weight:800;letter-spacing:-.035em}.brand small{display:block;margin-top:3px;color:var(--text2);font-size:10px;font-weight:600}
+.header-actions{display:flex;align-items:center;gap:4px}.room-reset{border:0;background:transparent;color:var(--text2);font:inherit;font-size:11px;padding:0 8px}
+.month-nav{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:10px}
+.month-arrow{border:0;background:var(--bg2);width:44px;height:44px;border-radius:50%;font-size:20px;color:var(--text)}
+.month-current{min-width:150px;text-align:center;position:relative}.month-current strong{font-size:15px}.month-current select{display:block;margin:2px auto 0;border:0;background:transparent;color:var(--text2);font:inherit;font-size:10px;padding:0 20px;height:24px;min-height:24px}
+.month-tabs{display:none}.section{padding:14px 16px 104px}
+.balance-hero{border-radius:18px;padding:17px 18px;background:var(--nav);color:#fff;margin-bottom:12px}.balance-hero .eyebrow{font-size:11px;color:#cbd4ce;margin-bottom:6px}.balance-hero .amount{font-size:28px;font-weight:850;letter-spacing:-.045em}.balance-hero .amount.negative{color:#ffb1aa}.balance-hero .amount.positive{color:#8fe0b4}.balance-hero .caption{font-size:11px;color:#cbd4ce;margin-top:7px;display:flex;justify-content:space-between}.balance-hero .caption b{color:#fff}
+.cards{grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px}.card{border-radius:14px;padding:12px 13px}.card-val{font-size:16px}.card.income .card-val{color:var(--blue)}.card.spend .card-val{color:var(--red)}
+.history-tools,.toggle-row{height:44px;background:var(--segment);border-radius:12px;padding:3px;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:3px;margin-bottom:14px}.history-tools button,.toggle-btn{border:0!important;border-radius:9px!important;background:transparent!important;color:var(--text2)!important;font-weight:700;padding:0!important}.history-tools button.on,.toggle-btn.on{background:var(--bg)!important;color:var(--text)!important;box-shadow:0 2px 8px rgba(20,35,25,.08)}
+.bottom-nav{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:min(420px,100%);height:78px;background:var(--dock);border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(4,1fr);padding:8px 8px 14px;z-index:150}.bottom-nav button{border:0;background:transparent;color:var(--text2);font:inherit;font-size:10px;font-weight:700;border-radius:10px}.bottom-nav button.on{color:var(--green);background:var(--green-bg)}
+.empty{padding:30px 16px;color:var(--text2);border-radius:16px}.empty-icon{width:44px;height:44px;border-radius:14px;background:var(--bg2);display:grid;place-items:center;margin:0 auto 10px;font-size:18px}.empty b{display:block;color:var(--text);font-size:13px}.empty p{font-size:11px;line-height:1.55;margin:5px 0 12px}.empty-cta{height:44px;padding:0 17px;border:0;border-radius:11px;background:var(--green);color:var(--on-green);font-size:12px;font-weight:800}
+.summary-hero{background:var(--bg);border:1px solid var(--border);border-radius:18px;padding:17px;margin-bottom:11px}.summary-hero .label{font-size:11px;color:var(--text2)}.summary-hero .big{font-size:27px;font-weight:850;margin:5px 0}.summary-hero .big.negative{color:var(--red)}.summary-hero .big.positive{color:var(--green)}.summary-progress{height:7px;border-radius:5px;background:var(--line);overflow:hidden}.summary-progress span{display:block;height:100%;background:var(--red)}.summary-progress-copy{display:flex;justify-content:space-between;font-size:10px;color:var(--text2);margin-top:6px}
+.summary-calc{background:var(--bg);border:1px solid var(--border);border-radius:16px;padding:6px 15px;margin-bottom:11px}.summary-calc .calc-row{min-height:44px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);font-size:12px}.summary-calc .calc-row:last-child{border:0}.summary-calc .calc-row span{color:var(--text2)}.money-in{color:var(--blue)}.money-out{color:var(--red)}.money-save{color:var(--green)}.summary-calc .total{min-height:52px;font-size:14px;font-weight:800}
+.summary-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:11px}.summary-action{min-width:0;padding:10px 12px;text-align:left;background:var(--bg);border:1px solid var(--border);border-radius:14px;color:var(--text);font-size:11px;font-weight:750}.summary-action small{display:block;margin-top:4px;color:var(--text2);font-size:10px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fixed-toolbar{display:flex;align-items:center;justify-content:space-between;background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:10px 11px;margin-bottom:10px}.fixed-toolbar b{font-size:12px}.fixed-toolbar small{display:block;color:var(--text2);font-size:10px;margin-top:3px}.fixed-view-value{margin-left:auto;font-weight:750}.fixed-save-dock{position:sticky;bottom:82px;display:flex;gap:8px;padding:10px;background:var(--dock);border:1px solid var(--border);border-radius:14px;z-index:20}.fixed-save-dock button{flex:1}.fixed-total{background:var(--nav);color:#fff;border:0}.fixed-total .fixed-total-row{color:#cbd4ce}.fixed-total .fixed-total-row span:last-child{color:#fff}.fixed-total .saving-label{color:#8fe0b4!important}
+@media(max-width:360px){.section{padding-left:10px;padding-right:10px}.balance-hero .amount{font-size:24px}.sec-title>span:last-child{max-width:68%;overflow-x:auto}}
 </style>
 </head>
 <body>
 <div class="app">
   <div class="header">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <h1 id="appTitle" style="font-size:15px;font-weight:600">📒 권능·가영 가계부</h1>
-      <div style="display:flex;align-items:center;gap:8px">
-        <select id="yearSel" onchange="setYear(this.value)" style="font-size:13px;font-weight:600;padding:4px 8px;border:1px solid var(--border2);border-radius:var(--r-sm);background:var(--bg);color:var(--text);font-family:inherit;outline:none;cursor:pointer"></select>
-        <button onclick="resetRoom()" style="background:none;border:none;font-size:11px;color:var(--text3);cursor:pointer;padding:4px 4px;font-family:inherit">재설정</button>
-      </div>
-    </div>
+    <div class="appbar-top"><div class="brand" id="appTitle">우리 가계부<small>권능 · 가영</small></div><div class="header-actions"><button class="room-reset" onclick="resetRoom()">공유 설정</button></div></div>
+    <div class="month-nav"><button class="month-arrow" aria-label="이전 달" onclick="moveMonth(-1)">‹</button><div class="month-current"><strong id="monthLabel"></strong><select id="yearSel" aria-label="연도 선택" onchange="setYear(this.value)"></select></div><button class="month-arrow" aria-label="다음 달" onclick="moveMonth(1)">›</button></div>
     <div class="month-tabs" id="tabs"></div>
   </div>
   <div class="section" id="content"></div>
+  <nav class="bottom-nav" aria-label="주요 화면"><button data-view="summary" onclick="setV('summary')">요약</button><button data-view="list" onclick="setV('list')">내역</button><button data-view="fixed" onclick="setV('fixed')">고정</button><button data-view="year" onclick="setV('year')">연간</button></nav>
 </div>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
@@ -271,7 +290,7 @@ function availableYears(){
 // 연도 전환: 방 전체가 이미 liveData에 로드돼 있으므로 키 접두(YY)만 바꾸고 다시 그린다.
 function setYear(y){
   YEAR=Number(y); YY=String(YEAR).slice(-2);
-  S.showForm=false;S.editId=null;S.showIncForm=false;S.incEditId=null;
+  S.showForm=false;S.editId=null;S.showIncForm=false;S.incEditId=null;S.fixedEdit=false;S.fixedDraft=null;
   migrateIds();   // 선택 연도 항목에 id 백필(없을 때만)
   render();
 }
@@ -407,16 +426,14 @@ function migrateIds(){
 }
 
 const today=new Date();
-let S={month:today.getMonth(),view:'list',person:'권능',showForm:false,editId:null,addingCat:false,showIncForm:false,incEditId:null,showImport:false,importMode:'shot',importText:'',importBusy:false,importStatus:'',importItems:[],importSkipped:0,importRaw:'',visionEdit:false,prefill:null,favEdit:false,batchRows:null,selMode:false,selIds:[],smOpen:{},expOpen:null};
+let S={month:today.getMonth(),view:'list',person:'권능',showForm:false,editId:null,addingCat:false,showIncForm:false,incEditId:null,showImport:false,importMode:'shot',importText:'',importBusy:false,importStatus:'',importItems:[],importSkipped:0,importRaw:'',visionEdit:false,prefill:null,favEdit:false,batchRows:null,selMode:false,selIds:[],smOpen:{},expOpen:null,fixedEdit:false,fixedDraft:null};
 
 const INC_TYPES=['권능 월급','가영 월급','부수입 (권능)','부수입 (가영)','기타'];
 
 function fmt(n){return Math.abs(Math.round(n)).toLocaleString('ko-KR')+'원';}
 function fmtS(n){
-  const a=Math.abs(Math.round(n)),sg=n<0?'-':'';
-  // 만 단위로 표시(억/백만 안 씀). 예: 10,000,000→"1,000만", 12,500,000→"1,250만", 50,000→"5만"
-  if(a>=10000)return sg+Math.round(a/10000).toLocaleString('ko-KR')+'만';
-  return sg+a.toLocaleString('ko-KR');
+  const v=Math.round(Number(n)||0);
+  return v.toLocaleString('ko-KR')+'원';
 }
 function todayStr(){
   const d=new Date();   // 등록 시점의 실제 날짜(자정 넘겨 열어둬도 정확)
@@ -433,13 +450,23 @@ function renderTabs(){
   document.getElementById('tabs').innerHTML=MONTHS.map((m,i)=>
     `<div class="tab ${i===S.month?'active':''}" onclick="selM(${i})">${m}</div>`
   ).join('');
-  setTimeout(()=>{const a=document.querySelector('.tab.active');if(a)a.scrollIntoView({block:'nearest',inline:'center'});},50);
+  const label=document.getElementById('monthLabel');
+  if(label)label.textContent=`${YEAR}년 ${S.month+1}월`;
+}
+
+function moveMonth(step){
+  let next=S.month+Number(step||0);
+  if(next<0){YEAR--;YY=String(YEAR).slice(-2);next=11;}
+  if(next>11){YEAR++;YY=String(YEAR).slice(-2);next=0;}
+  S.month=next;S.showForm=false;S.editId=null;S.showIncForm=false;S.incEditId=null;S.fixedEdit=false;S.fixedDraft=null;
+  migrateIds();render();
 }
 
 function renderYearSel(){
   const sel=document.getElementById('yearSel');
   if(!sel) return;
-  sel.innerHTML=availableYears().map(y=>`<option value="${y}" ${y===YEAR?'selected':''}>${y}년</option>`).join('');
+  const years=new Set(availableYears());years.add(YEAR);
+  sel.innerHTML=[...years].sort((a,b)=>a-b).map(y=>`<option value="${y}" ${y===YEAR?'selected':''}>연도 ${y}</option>`).join('');
 }
 
 function render(){
@@ -452,23 +479,13 @@ function render(){
   const totalVar=exps.reduce((s,e)=>s+(Number(e.amt)||0),0);
   const bal=totalInc-FT-ST-totalVar;
 
+  const available=totalInc-FT-totalVar;
   let h='';
-  if(S.view!=='summary'){
-    h+=`<div class="cards">
-    <div class="card"><div class="card-label">수입 합계</div><div class="card-val">${fmtS(totalInc)}</div><div class="card-sub">${totalInc>0?fmt(totalInc):'수입을 추가해주세요'}</div></div>
-    <div class="card"><div class="card-label">고정 + 저축</div><div class="card-val">${fmtS(FT+ST)}</div><div class="card-sub">고정 ${fmtS(FT)} · 저축 ${fmtS(ST)}</div></div>
-    <div class="card"><div class="card-label">변동지출</div><div class="card-val">${fmtS(totalVar)}</div><div class="card-sub">${exps.length}건</div></div>
-    <div class="card ${(bal+ST)>=0?'green':'red'}"><div class="card-label">이달 잔액+저축</div><div class="card-val">${fmtS(bal+ST)}</div><div class="card-sub">${totalInc>0?'저축률 '+((bal+ST)/totalInc*100).toFixed(1)+'%':'수입 입력 필요'}</div></div>
-  </div>`;
+  if(S.view!=='summary'&&S.view!=='fixed'&&S.view!=='year'){
+    h+=`<div class="balance-hero"><div class="eyebrow">이번 달 사용 가능액</div><div class="amount ${available<0?'negative':'positive'}">${fmtS(available)}</div><div class="caption"><span>${totalInc>0?'수입 반영 완료':'수입 입력 전'}</span><b>저축 계획 ${fmt(ST)}</b></div></div>
+    <div class="cards"><div class="card income"><div class="card-label">이번 달 수입</div><div class="card-val">${fmt(totalInc)}</div><div class="card-sub">${totalInc>0?incArr.length+'건':'수입을 등록해 주세요'}</div></div><div class="card spend"><div class="card-label">이번 달 지출</div><div class="card-val">${fmt(FT+totalVar)}</div><div class="card-sub">고정비 포함</div></div></div>`;
   }
-  h+=`<div class="toggle-row">
-    <button class="toggle-btn ${S.view==='summary'?'on':''}" onclick="setV('summary')">요약</button>
-    <button class="toggle-btn ${S.view==='income'?'on':''}" onclick="setV('income')">수입</button>
-    <button class="toggle-btn ${S.view==='list'?'on':''}" onclick="setV('list')">지출</button>
-    <button class="toggle-btn ${S.view==='cat'?'on':''}" onclick="setV('cat')">항목별</button>
-    <button class="toggle-btn ${S.view==='fixed'?'on':''}" onclick="setV('fixed')">고정</button>
-    <button class="toggle-btn ${S.view==='year'?'on':''}" onclick="setV('year')">연간</button>
-  </div>`;
+  if(['income','list','cat'].includes(S.view))h+=`<div class="history-tools" aria-label="내역 필터"><button class="${S.view==='income'?'on':''}" onclick="setV('income')">수입</button><button class="${S.view==='list'?'on':''}" onclick="setV('list')">지출</button><button class="${S.view==='cat'?'on':''}" onclick="setV('cat')">항목별</button></div>`;
   if(S.view==='summary') h+=summaryHtml(m,incArr,exps,totalInc,FT,ST,totalVar,bal);
 
   if(S.view==='income'){
@@ -489,7 +506,7 @@ function render(){
       </div>`;
     }
     if(incArr.length===0){
-      h+=`<div class="empty"><div class="empty-icon">💰</div>수입 내역을 추가해보세요</div>`;
+      h+=`<div class="empty"><div class="empty-icon">＋</div><b>아직 등록된 수입이 없어요</b><p>이번 달 수입을 등록하면<br>사용 가능액이 계산됩니다.</p><button class="empty-cta" onclick="openIncForm(null)">첫 수입 추가하기</button></div>`;
     }else{
       const sorted=[...incArr].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
       const gI={},oI=[];
@@ -623,7 +640,7 @@ function render(){
     }
 
     if(curList.length===0){
-      h+=`<div class="empty"><div class="empty-icon">📋</div>${S.person==='전체'?'지출 내역이 없어요':S.person+' 지출을 추가해보세요'}</div>`;
+      h+=`<div class="empty"><div class="empty-icon">＋</div><b>아직 등록된 지출이 없어요</b><p>${S.person==='전체'?'오늘 사용한 금액부터':'오늘 '+S.person+' 님이 사용한 금액부터'}<br>간단히 기록해 보세요.</p><button class="empty-cta" onclick="openForm(null)">첫 지출 추가하기</button></div>`;
     }else{
       // 검색·항목 필터 (화면 갱신 없이 DOM에서 바로 걸러 IME 안전)
       h+=`<div class="filter-bar">
@@ -709,47 +726,42 @@ function render(){
   }
 
   if(S.view==='fixed'){
-    const fi=getFixedForMonth(S.month),si=getSavForMonth(S.month);
+    const fi=S.fixedEdit&&S.fixedDraft?S.fixedDraft.fixed:getFixedForMonth(S.month);
+    const si=S.fixedEdit&&S.fixedDraft?S.fixedDraft.savings:getSavForMonth(S.month);
     const byT={권능:[],가영:[],공통:[]};
     fi.forEach(it=>{if(byT[it.tag])byT[it.tag].push(it);});
-    h+=`<div class="save-bar"><span class="save-hint">${MONTHS[S.month]} 금액 · 항목은 모든 달 공통</span><button class="btn-fixed-save" onclick="saveFixed()">저장</button></div>`;
+    h+=`<div class="fixed-toolbar"><div><b>고정지출 관리</b><small>${MONTHS[S.month]} 금액 · 항목은 모든 달 공통</small></div><button class="add-btn" onclick="toggleFixedEdit()">${S.fixedEdit?'보기로 돌아가기':'관리'}</button></div>`;
     ['권능','가영','공통'].forEach(tag=>{
       const items=byT[tag];
       const sub=items.reduce((s,i)=>s+(Number(i.amt)||0),0);
       h+=`<div class="fixed-box"><div class="fixed-header"><span>${tag} 고정지출</span><span>${fmt(sub)}</span></div>`;
       items.forEach(it=>{
-        h+=`<div class="fixed-item">
-          <input class="fixed-input" style="flex:1;width:auto" type="text" data-name="${it.id}" value="${esc(it.name)}" placeholder="항목명">
-          <input class="fixed-input" style="width:100px" type="number" inputmode="numeric" data-id="${it.id}" value="${it.amt}" oninput="previewFixed()" placeholder="0">
-          <span class="fixed-unit">원</span>
-          <button onclick="delFixed('${it.id}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:0 2px;line-height:1;flex-shrink:0">×</button>
-        </div>`;
+        h+=S.fixedEdit?`<div class="fixed-item"><input class="fixed-input" style="flex:1;width:auto" type="text" data-name="${it.id}" value="${esc(it.name)}" oninput="setFixedDraftField(S.fixedDraft,'fixed','${it.id}','name',this.value)" placeholder="항목명"><input class="fixed-input" style="width:112px" type="number" inputmode="numeric" data-id="${it.id}" value="${it.amt}" oninput="setFixedDraftField(S.fixedDraft,'fixed','${it.id}','amt',this.value);previewFixed()" placeholder="0"><button class="icon-btn del" aria-label="${esc(it.name)} 삭제" onclick="delFixed('${it.id}')">×</button></div>`
+          :`<div class="fixed-item"><span class="fixed-name">${esc(it.name)}</span><span class="fixed-view-value">${fmt(it.amt)}</span></div>`;
       });
-      h+=`<div style="padding:9px 13px;display:flex;gap:6px;border-top:1px solid var(--border)">
+      if(S.fixedEdit)h+=`<div style="padding:9px 13px;display:flex;gap:6px;border-top:1px solid var(--border)">
         <input type="text" placeholder="항목명" id="newFN_${tag}" style="flex:1;padding:7px 9px;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;background:var(--bg);color:var(--text);font-family:inherit;outline:none">
         <input type="number" inputmode="numeric" placeholder="금액" id="newFA_${tag}" style="width:90px;padding:7px 9px;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;background:var(--bg);color:var(--text);font-family:inherit;outline:none;text-align:right">
         <button onclick="addFixed('${tag}')" style="padding:7px 11px;background:var(--accent);color:var(--bg);border:none;border-radius:var(--r-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0">+</button>
-      </div></div>`;
-    });
-    const savSub=si.reduce((s,i)=>s+(Number(i.amt)||0),0);
-    h+=`<div class="fixed-box"><div class="fixed-header"><span class="saving-label">💚 저축 / 투자</span><span class="saving-label">${fmt(savSub)}</span></div>`;
-    si.forEach(it=>{
-      h+=`<div class="fixed-item">
-        <input class="fixed-input" style="flex:1;width:auto" type="text" data-sname="${it.id}" value="${esc(it.name)}" placeholder="항목명">
-        <input class="fixed-input" style="width:100px" type="number" inputmode="numeric" data-sid="${it.id}" value="${it.amt}" oninput="previewFixed()" placeholder="0">
-        <span class="fixed-unit">원</span>
-        <button onclick="delSaving('${it.id}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:0 2px;line-height:1;flex-shrink:0">×</button>
       </div>`;
+      h+=`</div>`;
     });
-    h+=`<div style="padding:9px 13px;display:flex;gap:6px;border-top:1px solid var(--border)">
+    const fixedDraftTotal=fi.reduce((s,i)=>s+(Number(i.amt)||0),0);
+    const savSub=si.reduce((s,i)=>s+(Number(i.amt)||0),0);
+    h+=`<div class="fixed-box"><div class="fixed-header"><span class="saving-label">저축 · 투자</span><span class="saving-label">${fmt(savSub)}</span></div>`;
+    si.forEach(it=>{
+      h+=S.fixedEdit?`<div class="fixed-item"><input class="fixed-input" style="flex:1;width:auto" type="text" data-sname="${it.id}" value="${esc(it.name)}" oninput="setFixedDraftField(S.fixedDraft,'savings','${it.id}','name',this.value)" placeholder="항목명"><input class="fixed-input" style="width:112px" type="number" inputmode="numeric" data-sid="${it.id}" value="${it.amt}" oninput="setFixedDraftField(S.fixedDraft,'savings','${it.id}','amt',this.value);previewFixed()" placeholder="0"><button class="icon-btn del" aria-label="${esc(it.name)} 삭제" onclick="delSaving('${it.id}')">×</button></div>`
+        :`<div class="fixed-item"><span class="fixed-name">${esc(it.name)}</span><span class="fixed-view-value money-save">${fmt(it.amt)}</span></div>`;
+    });
+    if(S.fixedEdit)h+=`<div style="padding:9px 13px;display:flex;gap:6px;border-top:1px solid var(--border)">
       <input type="text" placeholder="항목명" id="newSN" style="flex:1;padding:7px 9px;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;background:var(--bg);color:var(--text);font-family:inherit;outline:none">
       <input type="number" inputmode="numeric" placeholder="금액" id="newSA" style="width:90px;padding:7px 9px;border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;background:var(--bg);color:var(--text);font-family:inherit;outline:none;text-align:right">
-      <button onclick="addSaving()" style="padding:7px 11px;background:var(--green);color:#fff;border:none;border-radius:var(--r-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0">+</button>
-    </div></div>
-    <div class="fixed-box">
-      <div class="fixed-total-row" id="ftRow"><span>총 고정지출</span><span>${fmt(ft())}</span></div>
-      <div class="fixed-total-row" id="stRow" style="border-top:1px solid var(--border)"><span class="saving-label">저축 포함 합계</span><span class="saving-label">${fmt(ft()+st())}</span></div>
+      <button onclick="addSaving()" style="padding:7px 11px;background:var(--green);color:var(--on-green);border:none;border-radius:var(--r-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0">+</button>
     </div>`;
+    h+=`</div><div class="fixed-box fixed-total">
+      <div class="fixed-total-row" id="ftRow"><span>총 고정지출</span><span>${fmt(fixedDraftTotal)}</span></div>
+      <div class="fixed-total-row" id="stRow" style="border-top:1px solid var(--border)"><span class="saving-label">저축 포함 합계</span><span class="saving-label">${fmt(fixedDraftTotal+savSub)}</span></div>
+    </div>${S.fixedEdit?`<div class="fixed-save-dock"><button class="btn-cancel" onclick="cancelFixedEdit()">취소</button><button class="btn-save" onclick="saveFixed()">변경사항 저장</button></div>`:''}`;
   }
 
   if(S.view==='year'){
@@ -793,12 +805,16 @@ function render(){
 
   const _sy=window.scrollY;
   document.getElementById('content').innerHTML=h;
+  document.querySelectorAll('.bottom-nav button').forEach(btn=>{
+    const target=btn.dataset.view,active=target==='list'?['list','income','cat'].includes(S.view):target===S.view;
+    btn.classList.toggle('on',active);btn.setAttribute('aria-current',active?'page':'false');
+  });
   window.scrollTo(0,_sy);
 }
-function goMonth(m){S.month=m;S.view='list';S.showForm=false;S.editId=null;S.showIncForm=false;S.incEditId=null;render();}
+function goMonth(m){S.month=m;S.view='list';S.showForm=false;S.editId=null;S.showIncForm=false;S.incEditId=null;S.fixedEdit=false;S.fixedDraft=null;render();}
 
-function selM(i){S.month=i;S.showForm=false;S.editId=null;S.showIncForm=false;S.incEditId=null;S.prefill=null;S.favEdit=false;render();}
-function setV(v){S.view=v;S.showForm=false;S.editId=null;S.showIncForm=false;S.incEditId=null;S.prefill=null;S.favEdit=false;render();}
+function selM(i){S.month=i;S.showForm=false;S.editId=null;S.showIncForm=false;S.incEditId=null;S.prefill=null;S.favEdit=false;S.fixedEdit=false;S.fixedDraft=null;render();}
+function setV(v){S.view=v;S.showForm=false;S.editId=null;S.showIncForm=false;S.incEditId=null;S.prefill=null;S.favEdit=false;if(v!=='fixed'){S.fixedEdit=false;S.fixedDraft=null;}render();}
 function openForm(id){S.prefill=null;S.showForm=true;S.editId=id;render();setTimeout(()=>{const el=document.getElementById('fName');if(el)el.focus({preventScroll:true});},80);}
 function closeForm(){S.showForm=false;S.editId=null;S.prefill=null;render();}
 // 지출 추가/수정 폼 HTML. isE=true면 수정(항목 자리 인라인), false면 신규(리스트 맨 위).
@@ -895,46 +911,17 @@ function editFamilyNote(){
 function smToggle(el){const k=el&&el.dataset&&el.dataset.smkey;if(!k)return;S.smOpen[k]=!S.smOpen[k];render();}
 function summaryHtml(m,incArr,exps,totalInc,FT,ST,totalVar,bal){
   incArr=Array.isArray(incArr)?incArr:[]; exps=Array.isArray(exps)?exps:[];
-  const gojeong=FT, byeondong=totalVar, spend=gojeong+byeondong, remain=totalInc-spend;
-  const pct=(part)=>totalInc>0?(part/totalInc*100).toFixed(1):'—';
-  const rateStr=totalInc>0?pct(remain)+'%':'—', spendPctStr=totalInc>0?(spend/totalInc*100).toFixed(0)+'%':'—';
-  const money=n=>'₩'+(Number.isFinite(Number(n))?Math.round(Number(n)):0).toLocaleString('ko-KR');
-  const catOf=e=>String(e&&e.cat!=null&&e.cat!==''?e.cat:'기타'); // 집계·드릴다운 동일 정규화
-  const incMap=Object.create(null);incArr.forEach(i=>{const t=String(i&&i.type?i.type:'기타');incMap[t]=(incMap[t]||0)+(Number(i&&i.amt)||0);});
-  const incRows=Object.entries(incMap).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]);
-  const fixedItems=(Array.isArray(getFixedForMonth(m))?getFixedForMonth(m):[]).filter(i=>Number(i.amt)>0).sort((a,b)=>b.amt-a.amt);
-  const catMap=Object.create(null);exps.forEach(e=>{const c=catOf(e);catMap[c]=(catMap[c]||0)+(Number(e&&e.amt)||0);});
-  const catRows=Object.entries(catMap).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]);
-  const asset=getAsset(), note=getFamilyNote();
-  let x=`<div class="sm">`;
-  x+=`<div class="sm-top"><b>${YEAR}년 ${MONTHS[m]}</b> 머니 플로우 ${note?`· <span class="sm-note">${esc(note)}</span>`:''} <button class="vision-link" onclick="editFamilyNote()">메모</button></div>`;
-  x+=`<div class="sm-hero"><div class="l">🐷 이번 달 잔여 자금</div><div class="big">${money(remain)}</div><div class="rate">저축률 <b>${rateStr}</b></div></div>`;
-  x+=`<div class="sm-flow"><div class="sm-col"><div class="sm-lab in">수입</div>`;
-  x+= incRows.length?incRows.map(([t,v])=>`<div class="sm-node in"><span>${esc(t)}</span><b>${money(v)}</b></div>`).join(''):`<div class="sm-node muted"><span>수입 없음</span></div>`;
-  x+=`</div><div class="sm-hub"><div class="n">총수입</div><div class="v">${money(totalInc)}</div></div>`;
-  x+=`<div class="sm-col"><div class="sm-lab out">지출</div><div class="sm-grp"><span>🏠 고정비</span><b>${money(gojeong)}</b></div><div class="sm-grp"><span>🛒 변동비</span><b>${money(byeondong)}</b></div></div></div>`;
-  x+=`<div class="sm-brk"><div class="hd">🏠 고정비 상세</div>`;
-  x+= fixedItems.length?fixedItems.map(i=>`<div class="row"><span>${esc(i.name)}</span><b>${money(i.amt)}</b></div>`).join(''):`<div class="row muted"><span>고정지출 항목 없음 (고정 탭에서 추가)</span></div>`;
-  x+=`</div><div class="sm-brk"><div class="hd">🛒 변동비 상세 (카테고리별 · 눌러서 내역 보기)</div>`;
-  if(catRows.length){
-    catRows.forEach(([c,v])=>{
-      const key=m+'|cat|'+c, open=!!S.smOpen[key];
-      x+=`<div class="row clickable" data-smkey="${esc(key)}" onclick="smToggle(this)"><span>${open?'▾':'▸'} ${esc(c)}</span><b>${money(v)}</b></div>`;
-      if(open){
-        const items=exps.filter(e=>catOf(e)===c).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
-        x+=`<div class="sm-sub">`+(items.length?items.map(e=>`<div class="sm-subrow"><span>${esc((e.date||'').slice(5))} ${esc(e.name||'(내용 없음)')}${e.who?` · ${esc(e.who)}`:''}</span><b>${money(e.amt)}</b></div>`).join(''):`<div class="sm-subrow muted"><span>내역 없음</span></div>`)+`</div>`;
-      }
-    });
-  }else x+=`<div class="row muted"><span>지출 내역 없음</span></div>`;
-  x+=`</div>`;
-  if(ST>0) x+=`<div class="sm-brk"><div class="row"><span>💰 이번 달 저축 계획(고정)</span><b>${money(ST)}</b></div></div>`;
-  x+=`<div class="sm-bar">
-    <div class="b"><div class="n">💰 총수입</div><div class="v blue">${money(totalInc)}</div></div>
-    <div class="b"><div class="n">🛒 총지출 (${spendPctStr})</div><div class="v red">${money(spend)}</div></div>
-    <div class="b"><div class="n">🐷 이번 달 잔여</div><div class="v green">${money(remain)}</div></div>
-    <div class="b clickable" onclick="editAsset()"><div class="n">🏛️ 총자산 ✎</div><div class="v purple">${asset>0?money(asset):'입력하기'}</div></div>
-  </div></div>`;
-  return x;
+  const spend=FT+totalVar,available=totalInc-spend;
+  const ratio=totalInc>0?Math.min(100,Math.max(0,spend/totalInc*100)):100;
+  const groups={권능:0,가영:0,공통:0};
+  getFixedForMonth(m).forEach(it=>{if(groups[it.tag]!=null)groups[it.tag]+=Number(it.amt)||0;});
+  const rows=Object.entries(groups).filter(([,v])=>v>0);
+  const max=Math.max(1,...rows.map(([,v])=>v));
+  const debit=n=>Number(n)>0?'-'+fmt(n):fmt(0);
+  return `<div class="summary-hero"><div class="label">이번 달 잔액</div><div class="big ${available<0?'negative':'positive'}">${fmtS(available)}</div><div class="summary-progress"><span style="width:${ratio}%"></span></div><div class="summary-progress-copy"><span>수입 ${fmt(totalInc)}</span><span>지출 ${fmt(spend)}</span></div></div>
+    <div class="summary-calc"><div class="calc-row"><span>수입</span><b class="money-in">${fmt(totalInc)}</b></div><div class="calc-row"><span>고정지출</span><b class="money-out">${debit(FT)}</b></div><div class="calc-row"><span>변동지출</span><b class="money-out">${debit(totalVar)}</b></div><div class="calc-row"><span>저축 계획</span><b class="money-save">${fmt(ST)}</b></div><div class="calc-row total"><span>현재 사용 가능액</span><b class="${available<0?'money-out':'money-save'}">${fmtS(available)}</b></div></div>
+    <div class="summary-actions"><button class="summary-action" onclick="editAsset()">총자산 수정<small>${getAsset()?fmt(getAsset()):'아직 입력하지 않음'}</small></button><button class="summary-action" onclick="editFamilyNote()">가족 메모 수정<small>${esc(getFamilyNote()||'메모 추가하기')}</small></button></div>
+    <div class="cat-wrap"><div class="sec-title"><b>고정지출 구성</b><span>총 ${fmt(FT)}</span></div>${rows.length?rows.map(([name,value])=>`<div class="cat-row"><div class="cat-top"><span>${name} 고정지출</span><strong>${fmt(value)}</strong></div><div class="bar-bg"><div class="bar-fill" style="width:${Math.round(value/max*100)}%"></div></div></div>`).join(''):`<div class="empty">등록된 고정지출이 없어요</div>`}${totalInc<=0?`<div class="insight">수입이 아직 입력되지 않아 잔액이 음수예요. 수입을 등록하면 실제 사용 가능액이 계산됩니다.</div>`:''}</div>`;
 }
 
 // ── 자주 쓰는 항목 · 복사 · 지난달 복사 · 검색필터 ────────────
@@ -1598,35 +1585,49 @@ function previewFixed(){
   if(fr)fr.innerHTML=`<span>총 고정지출</span><span>${fmt(fSum)}</span>`;
   if(sr)sr.innerHTML=`<span class="saving-label">저축 포함 합계</span><span class="saving-label">${fmt(fSum+sSum)}</span>`;
 }
-function saveFixed(){
-  const m=S.month;
-  // (1) 항목 이름은 공통 목록(fg/sg)에 저장 — 모든 달에 반영
-  const fi=getFixedItems(),si=getSavItems();
-  document.querySelectorAll('[data-name]').forEach(el=>{const it=fi.find(i=>i.id===el.dataset.name);if(it)it.name=el.value.trim()||it.name;});
-  document.querySelectorAll('[data-sname]').forEach(el=>{const it=si.find(i=>i.id===el.dataset.sname);if(it)it.name=el.value.trim()||it.name;});
-  fbSet('fg'+YY,fi);fbSet('sg'+YY,si);
-  // (2) 금액은 이 달 전용 맵(fgm/sgm)에만 저장 — 다른 달에 영향 없음
-  const fMap={},sMap={};
-  document.querySelectorAll('[data-id]').forEach(el=>{fMap[el.dataset.id]=Number(el.value)||0;});
-  document.querySelectorAll('[data-sid]').forEach(el=>{sMap[el.dataset.sid]=Number(el.value)||0;});
-  fbSet('fgm'+YY+'_'+m,fMap);fbSet('sgm'+YY+'_'+m,sMap);
-  alert('저장됐어요!');render();
+function createFixedDraft(fixed,savings){
+  return {fixed:(fixed||[]).map(it=>({...it})),savings:(savings||[]).map(it=>({...it}))};
 }
-function delFixed(id){if(!confirm('삭제할까요?'))return;fbSet('fg'+YY,getFixedItems().filter(i=>i.id!==id));render();}
+function setFixedDraftField(draft,kind,id,field,value){
+  const item=draft&&draft[kind]&&draft[kind].find(it=>it.id===id);
+  if(item)item[field]=field==='amt'?(Number(value)||0):String(value);
+}
+function appendFixedDraftItem(draft,kind,item){if(draft&&draft[kind])draft[kind].push({...item,amt:Number(item.amt)||0});}
+function removeFixedDraftItem(draft,kind,id){if(draft&&draft[kind])draft[kind]=draft[kind].filter(it=>it.id!==id);}
+function fixedDraftPayload(draft,fixedBase,savingsBase){
+  const build=(rows,base)=>{
+    const originals=new Map((base||[]).map(it=>[it.id,it]));
+    return rows.map(it=>({...it,name:String(it.name||'').trim(),amt:originals.has(it.id)?(Number(originals.get(it.id).amt)||0):(Number(it.amt)||0)}));
+  };
+  const fixed=build(draft.fixed,fixedBase),savings=build(draft.savings,savingsBase);
+  return {fixed,savings,fixedMap:Object.fromEntries(draft.fixed.map(it=>[it.id,Number(it.amt)||0])),savingsMap:Object.fromEntries(draft.savings.map(it=>[it.id,Number(it.amt)||0]))};
+}
+function beginFixedEdit(){S.fixedDraft=createFixedDraft(getFixedForMonth(S.month),getSavForMonth(S.month));S.fixedEdit=true;render();}
+function cancelFixedEdit(){S.fixedEdit=false;S.fixedDraft=null;render();}
+function toggleFixedEdit(){if(S.fixedEdit)cancelFixedEdit();else beginFixedEdit();}
+function saveFixed(){
+  if(!S.fixedEdit||!S.fixedDraft)return;
+  const m=S.month;
+  const payload=fixedDraftPayload(S.fixedDraft,getFixedItems(),getSavItems());
+  fbSet('fg'+YY,payload.fixed);fbSet('sg'+YY,payload.savings);
+  fbSet('fgm'+YY+'_'+m,payload.fixedMap);fbSet('sgm'+YY+'_'+m,payload.savingsMap);
+  S.fixedEdit=false;S.fixedDraft=null;alert('저장됐어요!');render();
+}
+function delFixed(id){if(!S.fixedDraft||!confirm('삭제할까요?'))return;removeFixedDraftItem(S.fixedDraft,'fixed',id);render();}
 function addFixed(tag){
+  if(!S.fixedDraft)return;
   const n=(document.getElementById('newFN_'+tag)?.value||'').trim();
   const a=Number(document.getElementById('newFA_'+tag)?.value)||0;
   if(!n){alert('항목명을 입력해주세요');return;}
-  const fi=getFixedItems();fi.push({id:genId('f'),name:n,amt:a,tag});
-  fbSet('fg'+YY,fi);render();
+  appendFixedDraftItem(S.fixedDraft,'fixed',{id:genId('f'),name:n,amt:a,tag});render();
 }
-function delSaving(id){if(!confirm('삭제할까요?'))return;fbSet('sg'+YY,getSavItems().filter(i=>i.id!==id));render();}
+function delSaving(id){if(!S.fixedDraft||!confirm('삭제할까요?'))return;removeFixedDraftItem(S.fixedDraft,'savings',id);render();}
 function addSaving(){
+  if(!S.fixedDraft)return;
   const n=(document.getElementById('newSN')?.value||'').trim();
   const a=Number(document.getElementById('newSA')?.value)||0;
   if(!n){alert('항목명을 입력해주세요');return;}
-  const si=getSavItems();si.push({id:genId('s'),name:n,amt:a});
-  fbSet('sg'+YY,si);render();
+  appendFixedDraftItem(S.fixedDraft,'savings',{id:genId('s'),name:n,amt:a});render();
 }
 function addCatDirect(){
   const inp=document.getElementById('newCatDirect');
@@ -1717,7 +1718,7 @@ window.addEventListener('DOMContentLoaded',function(){
   <div style="background:var(--bg);border-radius:16px;padding:24px;width:100%;max-width:360px">
     <div style="font-size:28px;margin-bottom:8px">📒</div>
     <h2 style="font-size:18px;font-weight:700;margin-bottom:8px">공유 코드 설정</h2>
-    <p style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.7">두 사람이 <b>같은 코드</b>를 입력하면<br>실시간으로 같은 데이터를 공유해요.<br>아무 단어나 괜찮아요!</p>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.7">두 사람이 <b>같은 코드</b>를 입력하면<br>실시간으로 같은 데이터를 공유해요.<br>영문·숫자·_·- 조합으로 3~20자</p>
     <input type="text" id="roomCodeInput" placeholder="예: knky2026" maxlength="20"
       style="width:100%;padding:13px;border:1.5px solid var(--border2);border-radius:10px;font-size:16px;font-family:inherit;background:var(--bg);color:var(--text);outline:none;margin-bottom:12px;text-align:center;letter-spacing:2px">
     <button onclick="setRoom()" style="width:100%;padding:14px;background:var(--accent);color:var(--bg);border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">완료</button>

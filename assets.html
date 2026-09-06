@@ -12,173 +12,55 @@
 <title>자산 관리</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-:root{
-  --bg:#fff;--bg2:#f5f5f5;--bg3:#e8e8e8;
-  --text:#1a1a1a;--text2:#666;--text3:#aaa;
-  --border:#e0e0e0;--border2:#ccc;
-  --r:12px;--rs:8px;
-  --green-bg:#eaf3de;--green:#3b6d11;
-  --red-bg:#fcebeb;--red:#c0392b;
-  --acc:#2d2d2d;
-  --blue:#1a56b0;--blue-bg:#e8f0fe;
-  --gold:#b8860b;--gold-bg:#fef9e7;
-}
-@media(prefers-color-scheme:dark){:root{
-  --bg:#1c1c1e;--bg2:#2c2c2e;--bg3:#3a3a3c;
-  --text:#f0f0f0;--text2:#aaa;--text3:#555;
-  --border:#3a3a3c;--border2:#555;
-  --green-bg:#1a3a12;--green:#8fd46a;
-  --red-bg:#3b1a1a;--red:#e08080;
-  --acc:#e8e8e8;
-  --blue:#5b9bd5;--blue-bg:#1a2a3a;
-  --gold:#d4a017;--gold-bg:#2a2510;
-}}
-body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif;font-size:14px;color:var(--text);background:var(--bg2);min-height:100vh;padding-bottom:env(safe-area-inset-bottom)}
-#app{max-width:430px;margin:0 auto;min-height:100vh}
-.hdr{background:var(--bg);border-bottom:1px solid var(--border);padding:12px 16px 0;position:sticky;top:0;z-index:100;box-shadow:0 1px 6px rgba(0,0,0,.06)}
-.hdr-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-.hdr h1{font-size:14px;font-weight:600;color:var(--text2)}
-.hdr-right{display:flex;align-items:center;gap:8px}
-.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
-.sync-dot.off{background:var(--red)}
-.refresh-btn{background:none;border:1px solid var(--border2);border-radius:var(--rs);padding:4px 10px;font-size:11px;color:var(--text2);cursor:pointer;font-family:inherit}
-.total-area{text-align:center;padding:6px 16px 12px}
-.total-label{font-size:11px;color:var(--text2);margin-bottom:4px}
-.total-val{font-size:28px;font-weight:700;letter-spacing:-1px;color:var(--text)}
-.total-change{font-size:12px;margin-top:3px}
-.total-change.up{color:var(--red)}
-.total-change.dn{color:var(--blue)}
-.nav-tabs{display:flex;border-top:1px solid var(--border)}
-.nav-tab{flex:1;padding:8px 4px;font-size:12px;color:var(--text2);cursor:pointer;text-align:center;border-bottom:2px solid transparent;font-family:inherit;background:none;border-top:none;border-left:none;border-right:none}
-.nav-tab.on{color:var(--acc);border-bottom:2px solid var(--acc);font-weight:600}
-.sec{padding:12px 14px 40px}
-/* cards */
-.mini-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px}
-.mc{background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:8px 6px;text-align:center}
-.mc-label{font-size:10px;color:var(--text2);margin-bottom:3px}
-.mc-val{font-size:13px;font-weight:600}
-.mc-val.crypto{color:var(--gold)}
-.mc-val.stock{color:var(--blue)}
-.mc-val.etf{color:var(--green)}
-.mc-val.cash{color:var(--text)}
-/* list items */
-.asset-section{margin-bottom:14px}
-.sec-title{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;padding:0 2px}
-.asset-list{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
-.asset-item{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border)}
-.asset-item:last-child{border-bottom:none}
-.ai-left{flex:1;min-width:0}
-.ai-name{font-size:13px;font-weight:500;color:var(--text)}
-.ai-sub{font-size:11px;color:var(--text2);margin-top:3px;display:flex;align-items:center;gap:6px}
-.ai-right{text-align:right;flex-shrink:0}
-.ai-val{font-size:14px;font-weight:700;color:var(--text)}
-.ai-price{font-size:12px;color:var(--text2);margin-top:2px}
-.ai-roi{font-size:11px;font-weight:600;margin-top:2px}
-.ai-roi.up{color:#c0392b}
-.ai-roi.dn{color:#1a56b0}
-.pct-badge{font-size:10px;padding:1px 6px;border-radius:99px;font-weight:600;background:var(--bg3);color:var(--text2)}
-.chg-up{font-size:11px;font-weight:600;color:#c0392b}
-.chg-dn{font-size:11px;font-weight:600;color:#1a56b0}
-@media(prefers-color-scheme:dark){
-  .chg-up{color:#e08080}
-  .chg-dn{color:#5b9bd5}
-}
-.loading-price{color:var(--text3);font-size:13px}
-/* form */
-.form-box{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px}
-.form-box.edit{border-color:var(--acc);border-width:2px}
-.fr{margin-bottom:9px}
-.fr label{display:block;font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:500}
-.fr input,.fr select{width:100%;padding:9px 11px;border:1px solid var(--border2);border-radius:var(--rs);font-size:14px;background:var(--bg);color:var(--text);font-family:inherit;-webkit-appearance:none;appearance:none;outline:none}
-.fr input:focus,.fr select:focus{border-color:var(--acc)}
-.fa{display:flex;gap:7px;margin-top:10px}
-.btn-s{flex:1;padding:10px;background:var(--acc);color:var(--bg);border:none;border-radius:var(--rs);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
-.btn-c{padding:10px 14px;background:transparent;border:1px solid var(--border2);border-radius:var(--rs);font-size:13px;cursor:pointer;color:var(--text2);font-family:inherit}
-.add-btn{background:var(--bg);border:1px solid var(--border2);border-radius:var(--rs);padding:5px 12px;font-size:12px;color:var(--text);cursor:pointer;font-family:inherit}
-.smart-add-btn{width:100%;padding:11px 12px;margin-bottom:10px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue);border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
-.smart-search-row{display:flex;gap:6px}
-.smart-search-row input{flex:1;min-width:0;padding:10px 11px;border:1px solid var(--border2);border-radius:var(--rs);font-size:14px;background:var(--bg);color:var(--text);font-family:inherit;outline:none}
-.smart-search-row input:focus{border-color:var(--acc)}
-.smart-search-row button{padding:10px 14px;background:var(--acc);color:var(--bg);border:0;border-radius:var(--rs);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
-.smart-search-row button:disabled{opacity:.55;cursor:default}
-.smart-status{min-height:16px;margin-top:7px;font-size:11px;color:var(--text3)}
-.smart-results{max-height:420px;margin-top:8px;border:1px solid var(--border);border-radius:var(--rs);overflow-x:hidden;overflow-y:auto}
-.smart-result{width:100%;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 11px;background:var(--bg);border:0;border-bottom:1px solid var(--border);color:var(--text);text-align:left;cursor:pointer;font-family:inherit}
-.smart-result:last-child{border-bottom:0}
-.smart-result-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.smart-result-sub{font-size:10px;color:var(--text3);margin-top:2px}
-.smart-result-type{flex-shrink:0;font-size:10px;padding:2px 6px;border-radius:99px;background:var(--bg3);color:var(--text2)}
-/* manage tabs */
-.sub-tabs{display:flex;gap:6px;margin-bottom:12px}
-.sub-tab{flex:1;padding:7px;border:1px solid var(--border2);border-radius:var(--rs);font-size:12px;background:var(--bg);cursor:pointer;color:var(--text2);font-family:inherit;text-align:center}
-.sub-tab.on{background:var(--acc);color:var(--bg);border-color:var(--acc);font-weight:500}
-/* manage items */
-.manage-item{display:flex;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border);gap:8px}
-.manage-item:last-child{border-bottom:none}
-.mi-info{flex:1;min-width:0}
-.mi-name{font-size:13px;font-weight:500}
-.mi-sub{font-size:11px;color:var(--text3);margin-top:2px}
-.mi-btns{display:flex;gap:4px;flex-shrink:0}
-.mi-btn{background:none;border:1px solid var(--border);border-radius:var(--rs);color:var(--text2);cursor:pointer;font-size:12px;padding:4px 8px;font-family:inherit}
-.mi-btn.d{color:var(--red);border-color:transparent}
-/* history */
-.hist-chart{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:12px;overflow:hidden}
-.record-btn{width:100%;padding:12px;background:var(--acc);color:var(--bg);border:none;border-radius:var(--r);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:12px}
-.hist-list{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
-.hist-item{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;border-bottom:1px solid var(--border);font-size:13px}
-.hist-item:last-child{border-bottom:none}
-.hist-date{color:var(--text2);font-size:12px}
-.hist-total{font-weight:600}
-.hist-change{font-size:11px}
-.hist-change.up{color:var(--red)}
-.hist-change.dn{color:var(--blue)}
-/* empty */
-.empty{text-align:center;padding:28px 16px;color:var(--text3);font-size:13px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r)}
-/* setup modal */
-#roomSetup{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:999;align-items:center;justify-content:center;padding:20px}
-.setup-box{background:var(--bg);border-radius:16px;padding:24px;width:100%;max-width:360px}
-.setup-box h2{font-size:18px;font-weight:700;margin-bottom:8px}
-.setup-box p{font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.7}
-.setup-input{width:100%;padding:13px;border:1.5px solid var(--border2);border-radius:10px;font-size:16px;font-family:inherit;background:var(--bg);color:var(--text);outline:none;margin-bottom:12px;text-align:center;letter-spacing:2px}
-.setup-btn{width:100%;padding:14px;background:var(--acc);color:var(--bg);border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit}
+:root{--bg:#fff;--paper:#f2f5f2;--soft:#e8ede9;--text:#14201a;--muted:#6d7871;--faint:#98a29c;--border:#dfe6e1;--border2:#cbd5ce;--nav:#17251e;--green:#147a4b;--green2:#61ad82;--green-bg:#eaf6ef;--red:#c8433a;--red-bg:#fff0ee;--blue:#3568bd;--blue-bg:#eef3fc;--gold:#9a7515;--gold-bg:#fbf5e7;--r:16px;--rs:11px;--acc:var(--green);--on-green:#fff;--bg2:var(--paper);--bg3:var(--soft);--text2:var(--muted);--text3:var(--faint);--dock:rgba(255,255,255,.97);--segment:#e3e8e4;--line:#edf1ee}
+@media(prefers-color-scheme:dark){:root{--bg:#1c211e;--paper:#111613;--soft:#2b332e;--text:#f3f6f4;--muted:#b4beb8;--faint:#89958e;--border:#354039;--border2:#4b5a51;--nav:#0c120f;--green:#70d4a0;--green2:#61ad82;--green-bg:#14372a;--red:#ff928a;--red-bg:#41201f;--blue:#90b4ff;--blue-bg:#1d2d49;--gold:#e2c46d;--gold-bg:#3a311b;--on-green:#1c211e;--dock:rgba(28,33,30,.97);--segment:#303934;--line:#303934}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;font-variant-numeric:tabular-nums;font-size:14px;color:var(--text);background:var(--paper);min-height:100vh;padding-bottom:calc(78px + env(safe-area-inset-bottom))}
+button,input,select{font:inherit}button{cursor:pointer}.up,.chg-up,.ai-roi.up,.hist-change.up{color:var(--green)!important}.dn,.chg-dn,.ai-roi.dn,.hist-change.dn{color:var(--red)!important}
+#app{max-width:430px;margin:0 auto;min-height:100vh;background:var(--paper)}
+.appbar{background:var(--bg);border-bottom:1px solid var(--border);padding:calc(12px + env(safe-area-inset-top)) 17px 13px;position:sticky;top:0;z-index:100}
+.appbar-top{display:flex;justify-content:space-between;align-items:center}.brand{font-size:18px;font-weight:850;letter-spacing:-.04em}.brand-sub{display:block;color:var(--muted);font-size:10px;font-weight:600;margin-top:3px;letter-spacing:0}.appbar-tools{display:flex;gap:8px}.icon-btn{width:44px;height:44px;border:1px solid var(--border);border-radius:13px;background:var(--bg);color:var(--text);font-size:18px}.sync-status{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:10px;margin-top:10px;min-height:16px}.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex:none}.sync-dot.off{background:var(--red)}.sync-status #lastUpdate{margin-left:auto;color:var(--text);font-weight:700}.sec{padding:14px 16px 28px}
+.hero{background:var(--nav);color:#fff;border-radius:20px;padding:18px;margin-bottom:12px}.hero-label{font-size:10px;color:#c4cec8}.hero-amount{font-size:30px;font-weight:850;letter-spacing:-.055em;margin-top:7px;white-space:nowrap}.total-change{display:inline-block;font-size:10px;font-weight:750;margin-top:10px;padding:5px 8px;border-radius:8px;background:rgba(255,255,255,.08)}.total-change.up{color:#8de1b3!important}.total-change.dn{color:#ff9b94!important}.hero-foot{display:flex;justify-content:space-between;gap:12px;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.15);font-size:10px;color:#c4cec8}.hero-foot b{display:block;color:#fff;margin-top:3px}
+.allocation,.summary-strip,.asset-group,.chart-card,.record-list,.form-box,.asset-list,.empty{background:var(--bg);border:1px solid var(--border);border-radius:var(--r)}.allocation{padding:15px;margin-bottom:12px}.section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px}.section-head b{font-size:13px}.section-head span{font-size:10px;color:var(--muted)}.allocation-body{display:flex;align-items:center;gap:18px}.allocation-donut{width:112px;height:112px;border-radius:50%;flex:none;display:grid;place-items:center;position:relative}.allocation-donut:after{content:'';width:62px;height:62px;border-radius:50%;background:var(--bg);position:absolute}.allocation-center{z-index:1;text-align:center;font-size:9px;color:var(--muted)}.allocation-center b{display:block;font-size:13px;color:var(--text);margin-top:2px}.allocation-list{flex:1;display:grid;gap:9px}.allocation-row{display:grid;grid-template-columns:8px 1fr auto;align-items:center;gap:7px;font-size:10px}.allocation-row b{font-size:11px}.alloc-dot{width:8px;height:8px;border-radius:3px;background:var(--green)}.alloc-dot.stock{background:var(--blue)}.alloc-dot.etf{background:var(--gold)}.alloc-dot.cash{background:#aab4ae}.quick{display:grid;grid-template-columns:1fr 1fr;gap:10px}.qcard{background:var(--bg);border:1px solid var(--border);border-radius:15px;padding:14px}.qcard span{font-size:9px;color:var(--muted)}.qcard b{display:block;font-size:16px;margin-top:6px}
+.bottom-nav{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:min(430px,100%);height:calc(68px + env(safe-area-inset-bottom));padding:6px 6px env(safe-area-inset-bottom);display:grid;grid-template-columns:repeat(4,1fr);background:var(--dock);border-top:1px solid var(--border);z-index:200}.nav-tab{min-height:44px;border:0;background:transparent;color:var(--muted);font-size:10px;font-weight:750}.nav-tab .nav-icon{display:block;font-size:18px;line-height:22px}.nav-tab.on{color:var(--green)}
+.search-shell{width:100%;height:44px;border-radius:13px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;padding:0 13px;margin-bottom:11px;font-size:11px;color:var(--muted);text-align:left}.summary-strip{display:grid;grid-template-columns:1fr 1fr;margin-bottom:11px;overflow:hidden}.summary-item{padding:13px 14px}.summary-item:first-child{border-right:1px solid var(--border)}.summary-item span{font-size:9px;color:var(--muted)}.summary-item b{display:block;font-size:15px;margin-top:5px}.asset-group{margin-bottom:10px;overflow:hidden}.group-head{padding:12px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line)}.group-title{display:flex;align-items:center;gap:9px}.asset-mark{width:30px;height:30px;border-radius:10px;background:var(--green-bg);color:var(--green);display:grid;place-items:center;font-size:10px;font-weight:850}.asset-mark.stock{background:var(--blue-bg);color:var(--blue)}.asset-mark.etf{background:var(--gold-bg);color:var(--gold)}.asset-mark.cash{background:var(--soft);color:var(--muted)}.group-title b,.group-total b{font-size:12px}.group-title small,.group-total small{display:block;font-size:9px;color:var(--muted);margin-top:3px}.group-total{text-align:right}.holding-row{min-height:52px;padding:7px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}.holding-name{font-size:11px}.holding-name small{display:block;color:var(--muted);font-size:9px;margin-top:3px}.holding-value{text-align:right;font-size:11px;font-weight:750}.holding-value small{display:block;font-size:9px;margin-top:3px}.group-toggle{width:100%;min-height:44px;border:0;border-top:1px solid var(--line);background:var(--bg);color:var(--green);font-size:10px;font-weight:800}.fx-note{text-align:right;font-size:10px;color:var(--blue);padding:2px}
+.period-tabs{min-height:44px;background:var(--segment);border-radius:12px;padding:3px;display:grid;grid-template-columns:repeat(5,1fr);gap:2px;margin-bottom:11px}.period-tab{min-height:38px;border:0;background:transparent;color:var(--muted);font-size:10px;font-weight:700;border-radius:9px}.period-tab.on{background:var(--bg);color:var(--text);box-shadow:0 2px 8px rgba(25,40,30,.08)}.chart-card{padding:15px;margin-bottom:11px;overflow:hidden}.chart-eyebrow{font-size:10px;color:var(--muted)}.chart-amount{font-size:23px;font-weight:850;letter-spacing:-.04em;margin-top:5px}.chart-delta{font-size:10px;margin-top:4px}.record-list{overflow:hidden}.record-head{min-height:44px;padding:10px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}.record-head b{font-size:12px}.record-head button{min-height:44px;border:0;background:transparent;font-size:10px;color:var(--muted)}.hist-item{min-height:58px;display:flex;justify-content:space-between;align-items:center;padding:8px 14px;border-bottom:1px solid var(--line);font-size:13px}.hist-date{color:var(--muted);font-size:10px}.hist-total{font-weight:750}.hist-change{font-size:10px;margin-top:3px}.history-toggle{width:100%;min-height:44px;border:0;border-top:1px solid var(--line);background:var(--bg);color:var(--green);font-size:10px;font-weight:800}
+.asset-section{margin-bottom:14px}.sec-title{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;padding:0 2px}.asset-list{overflow:hidden}.asset-item,.manage-item{min-height:52px;display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);gap:8px}.asset-item:last-child,.manage-item:last-child{border-bottom:0}.ai-left,.mi-info{flex:1;min-width:0}.ai-name,.mi-name{font-size:13px;font-weight:600}.ai-sub,.mi-sub{font-size:10px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:6px}.ai-right{text-align:right;flex-shrink:0}.ai-val{font-size:14px;font-weight:750}.ai-roi,.chg-up,.chg-dn{font-size:10px;font-weight:700;margin-top:2px}.pct-badge,.smart-result-type{font-size:9px;padding:2px 6px;border-radius:99px;background:var(--soft);color:var(--muted)}
+.form-box{padding:14px;margin-bottom:10px}.form-box.edit{border:2px solid var(--green)}.fr{margin-bottom:10px}.fr label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:600}.fr input,.fr select,.smart-search-row input{width:100%;min-height:44px;padding:9px 11px;border:1px solid var(--border2);border-radius:var(--rs);font-size:14px;background:var(--bg);color:var(--text);outline:none}.fr input:focus,.fr select:focus,.smart-search-row input:focus{border-color:var(--green)}.fa,.mi-btns{display:flex;gap:7px;margin-top:10px}.btn-s,.btn-c,.add-btn,.smart-add-btn,.smart-search-row button,.sub-tab,.mi-btn,.record-btn{min-height:44px;border-radius:var(--rs);font-weight:700}.btn-s{flex:1;background:var(--green);color:var(--on-green);border:0}.btn-c,.add-btn,.mi-btn{padding:8px 13px;background:var(--bg);border:1px solid var(--border2);color:var(--muted)}.mi-btn.d{color:var(--red);border-color:transparent}.smart-add-btn,.record-btn{width:100%;padding:10px 12px;margin-bottom:10px;background:var(--green);color:var(--on-green);border:0}.smart-search-row{display:flex;gap:7px}.smart-search-row input{flex:1;min-width:0}.smart-search-row button{padding:8px 15px;background:var(--nav);color:#fff;border:0}.smart-status{min-height:16px;margin-top:7px;font-size:11px;color:var(--faint)}.smart-results{max-height:420px;margin-top:8px;border:1px solid var(--border);border-radius:var(--rs);overflow:auto}.smart-result{width:100%;min-height:44px;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 11px;background:var(--bg);border:0;border-bottom:1px solid var(--border);color:var(--text);text-align:left}.smart-result-name{font-size:13px;font-weight:600}.smart-result-sub{font-size:10px;color:var(--faint);margin-top:2px}.sub-tabs{display:flex;gap:6px;margin-bottom:12px}.sub-tab{flex:1;border:1px solid var(--border2);background:var(--bg);color:var(--muted)}.sub-tab.on{background:var(--nav);color:#fff;border-color:var(--nav)}.empty{text-align:center;padding:28px 16px;color:var(--faint)}
+#roomSetup{display:none;position:fixed;inset:0;background:rgba(15,27,20,.78);z-index:999;align-items:center;justify-content:center;padding:20px}.setup-box{background:var(--bg);border-radius:20px;padding:24px;width:100%;max-width:360px}.setup-box h2{font-size:20px;font-weight:850;margin-bottom:9px}.setup-box p{font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.65}.setup-rules{background:var(--green-bg);border-radius:12px;padding:11px 12px;margin-bottom:14px;font-size:11px;color:var(--green);line-height:1.6}.setup-input{width:100%;min-height:48px;padding:12px;border:1.5px solid var(--border2);border-radius:12px;font-size:16px;background:var(--bg);color:var(--text);outline:none;margin-bottom:10px;text-align:center;letter-spacing:2px}.setup-btn{width:100%;min-height:48px;background:var(--green);color:var(--on-green);border:0;border-radius:12px;font-size:15px;font-weight:750}
+@media(max-width:360px){.hero-amount{font-size:26px}.allocation-body{gap:11px}.allocation-donut{width:96px;height:96px}.hero-foot{font-size:9px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 </style>
 </head>
 <body>
 <div id="app">
   <div id="roomSetup">
     <div class="setup-box">
-      <div style="font-size:28px;margin-bottom:8px">📈</div>
-      <h2>공유 코드 설정</h2>
-      <p>가계부와 같은 코드를 입력하면<br>같은 Firebase에 저장돼요.<br>다른 코드를 입력하면 별도로 관리돼요.</p>
-      <input type="text" class="setup-input" id="roomCodeInput" placeholder="예: knky2026" maxlength="20">
-      <button class="setup-btn" onclick="setRoom()">완료</button>
-      <p style="font-size:11px;color:var(--text3);text-align:center;margin-top:12px">가영이도 같은 코드 입력하면 돼요</p>
+      <h2>공유 코드로 연결</h2>
+      <p>가계부와 같은 공유 코드를 입력하면 두 앱이 같은 Firebase 공간을 사용합니다. 다른 코드를 쓰면 자산 데이터가 별도로 보관됩니다.</p>
+      <div class="setup-rules"><b>코드 규칙</b><br>3~20자 · 영문, 숫자, 밑줄(_), 하이픈(-)만 사용</div>
+      <input type="text" class="setup-input" id="roomCodeInput" placeholder="예: family_2026" maxlength="20" minlength="3" pattern="[A-Za-z0-9_-]{3,20}" autocomplete="off" aria-describedby="roomCodeHelp">
+      <button class="setup-btn" onclick="setRoom()">이 코드로 시작</button>
+      <p id="roomCodeHelp" style="font-size:11px;text-align:center;margin:11px 0 0">함께 쓰는 사람도 정확히 같은 코드를 입력해야 합니다.</p>
     </div>
   </div>
   <div id="mainApp" style="display:none">
-    <div class="hdr">
-      <div class="hdr-top">
-        <h1>📈 자산 관리 <span style="font-size:10px;color:var(--text3);font-weight:400">v9</span></h1>
-        <div class="hdr-right">
-          <button onclick="resetRoom()" style="background:none;border:none;font-size:11px;color:var(--text3);cursor:pointer;padding:4px 6px;font-family:inherit">코드 재설정</button>
-          <span id="lastUpdate" style="font-size:10px;color:var(--text3)"></span>
-          <button class="refresh-btn" onclick="updatePrices(true)">🔄 업데이트</button>
-          <span id="dot" class="sync-dot off"></span>
+    <header class="appbar">
+      <div class="appbar-top">
+        <div class="brand" id="viewTitle">자산관리<span class="brand-sub" id="viewSubtitle">통합 포트폴리오</span></div>
+        <div class="appbar-tools">
+          <button class="icon-btn" onclick="updatePrices(true)" aria-label="시세 업데이트">↻</button>
+          <button class="icon-btn" onclick="setV('total')" aria-label="총자산 상세">⋯</button>
         </div>
       </div>
-      <div class="total-area">
-        <div class="total-label">총 자산</div>
-        <div class="total-val" id="totalVal">—</div>
-        <div class="total-change" id="totalChange"></div>
-      </div>
-      <div class="nav-tabs">
-        <button class="nav-tab on" onclick="setV('dashboard')">현황</button>
-        <button class="nav-tab" onclick="setV('history')">기록</button>
-        <button class="nav-tab" onclick="setV('manage')">관리</button>
-        <button class="nav-tab" onclick="setV('total')">총자산</button>
-      </div>
-    </div>
-    <div class="sec" id="content"></div>
+      <div class="sync-status"><span id="dot" class="sync-dot off"></span><span id="syncLabel">연결 확인 중</span><span id="lastUpdate">업데이트 대기</span></div>
+    </header>
+    <main class="sec" id="content"></main>
+    <nav class="bottom-nav" aria-label="주요 메뉴">
+      <button class="nav-tab on" onclick="setV('dashboard')"><span class="nav-icon">⌂</span>현황</button>
+      <button class="nav-tab" onclick="setV('holdings')"><span class="nav-icon">▦</span>보유자산</button>
+      <button class="nav-tab" onclick="setV('history')"><span class="nav-icon">⌁</span>기록</button>
+      <button class="nav-tab" onclick="setV('manage')"><span class="nav-icon">⚙</span>관리</button>
+    </nav>
   </div>
 </div>
 
@@ -223,7 +105,7 @@ const DEMO_MODE=new URLSearchParams(location.search).get('demo')==='1';
 let db=null, ROOM=DEMO_MODE?'demo':localStorage.getItem('asset_room'), connected=false;
 let live={crypto:[...SEED_CRYPTO],stocks:[...SEED_STOCKS],etf:[...SEED_ETF],cash:[...SEED_CASH],history:[...SEED_HISTORY]};
 let prices={}, exRate=null;
-let S={view:'dashboard',manageType:'crypto',showForm:false,showSmartAdd:false,prefillAsset:null,editId:null,loading:false,chartPeriod:'1M'};
+let S={view:'dashboard',manageType:'crypto',showForm:false,showSmartAdd:false,prefillAsset:null,editId:null,loading:false,chartPeriod:'1M',expandedHoldingGroups:{},showAllHistory:false};
 
 // ── 포맷 ─────────────────────────────────────────────────────
 function fmtW(n){return Math.round(Math.abs(n)).toLocaleString('ko-KR')+'원';}
@@ -901,6 +783,8 @@ db=firebase.database();
     connected=!!snap.val();
     const dot=document.getElementById('dot');
     if(dot) dot.className='sync-dot'+(connected?'':' off');
+    const label=document.getElementById('syncLabel');
+    if(label) label.textContent=connected?'시세·데이터 정상 연결':'오프라인 · 저장된 데이터 표시';
   });
   db.ref(`assets/${ROOM}`).once('value',snap=>{
     if(!snap.val()){
@@ -945,124 +829,94 @@ function fbSave(key,val){
 // ── 렌더 ─────────────────────────────────────────────────────
 function render(){
   const t=calcTotals();
-  // 헤더 총자산
-  const tv=document.getElementById('totalVal');
-  const tc=document.getElementById('totalChange');
-  if(tv) tv.textContent=t.hasPrice?fmtW(t.crypto+t.stocks+t.etf+t.cash):'가격 업데이트 필요';
-  if(tc){
-    const prev=prevDayRecord();
-    if(prev&&t.hasPrice){
-      const cashTotal=live.cash.reduce((s,i)=>s+(Number(i.amount)||0),0);
-      // 기록마다 total의 현금 포함 여부가 달라, 투자분(코인·주식·ETF)만 비교하고 현금은 현재값으로 통일
-      const yesterday=histInvest(prev)+cashTotal;
-      const nowTotal=t.crypto+t.stocks+t.etf+t.cash;
-      const diff=nowTotal-yesterday;
-      const pct=(diff/yesterday*100).toFixed(1);
-      tc.textContent=(diff>=0?'▲':'▼')+' '+fmtWShort(Math.abs(diff))+' ('+pct+'%) 전일대비';
-      tc.className='total-change '+(diff>=0?'up':'dn');
-    }else{ tc.textContent=''; }
-  }
-  // 탭
+  const titles={dashboard:['자산관리','통합 포트폴리오'],holdings:['보유자산',`총 ${live.crypto.length+live.stocks.length+live.etf.length+live.cash.length}개 항목`],history:['자산 기록','투자자산 변동 추이'],manage:['자산 관리','검색·추가·수정'],total:['총자산 상세','현금·기타 및 전체 추이']};
+  const [title,subtitle]=titles[S.view]||titles.dashboard;
+  const titleEl=document.getElementById('viewTitle');
+  if(titleEl) titleEl.innerHTML=`${title}<span class="brand-sub" id="viewSubtitle">${subtitle}</span>`;
   document.querySelectorAll('.nav-tab').forEach(el=>{
-    el.classList.toggle('on', el.getAttribute('onclick').includes(S.view));
+    const action=el.getAttribute('onclick')||'';
+    el.classList.toggle('on',action.includes(`'${S.view}'`)||(S.view==='total'&&action.includes("'dashboard'")));
   });
   renderContent(t);
+}
+
+function totalDelta(t){
+  const prev=prevDayRecord();
+  if(!prev||!t.hasPrice) return null;
+  const yesterday=histInvest(prev)+t.cash;
+  const current=t.total;
+  const diff=current-yesterday;
+  return {diff,pct:yesterday?diff/yesterday*100:0};
 }
 
 function renderContent(t){
   const el=document.getElementById('content');
   if(!el)return;
   if(S.view==='dashboard') el.innerHTML=renderDashboard(t);
+  else if(S.view==='holdings') el.innerHTML=renderHoldings(t);
   else if(S.view==='history') el.innerHTML=renderHistory(t);
   else if(S.view==='manage') el.innerHTML=renderManage();
   else if(S.view==='total') el.innerHTML=renderTotalAssets(t);
 }
 
-// ── 대시보드 뷰 ───────────────────────────────────────────────
+function renderAllocation(t){
+  const total=t.total||0;
+  const entries=[
+    ['crypto','코인',t.crypto,''],['stocks','주식',t.stocks,'stock'],
+    ['etf','ETF',t.etf,'etf'],['cash','현금',t.cash,'cash'],
+  ];
+  const pct=value=>total?value/total*100:0;
+  let cursor=0;
+  const stops=entries.map(([, ,value],index)=>{
+    const colors=['var(--green)','var(--blue)','var(--gold)','#aab4ae'];
+    const start=cursor;cursor+=pct(value);return `${colors[index]} ${start.toFixed(2)}% ${cursor.toFixed(2)}%`;
+  }).join(',');
+  const investPct=total?(t.crypto+t.stocks+t.etf)/total*100:0;
+  return `<section class="allocation"><div class="section-head"><b>자산 배분</b><span>총자산 기준</span></div>
+    <div class="allocation-body"><div class="allocation-donut" style="background:conic-gradient(${stops})"><div class="allocation-center">투자<b>${investPct.toFixed(1)}%</b></div></div>
+    <div class="allocation-list">${entries.map(([,label,value,cls])=>`<div class="allocation-row"><i class="alloc-dot ${cls}"></i><span>${label} ${pct(value).toFixed(1)}%</span><b>${fmtS(value)}원</b></div>`).join('')}</div></div></section>`;
+}
+
 function renderDashboard(t){
-  let h='';
-  h+=`<div class="mini-cards">
-    <div class="mc"><div class="mc-label">🪙 코인</div><div class="mc-val crypto">${fmtS(t.crypto)}</div></div>
-    <div class="mc"><div class="mc-label">📈 주식</div><div class="mc-val stock">${fmtS(t.stocks)}</div></div>
-    <div class="mc"><div class="mc-label">🏦 ETF</div><div class="mc-val etf">${fmtS(t.etf)}</div></div>
-    <div class="mc"><div class="mc-label">💰 현금</div><div class="mc-val cash">${fmtS(t.cash)}</div></div>
-  </div>`;
+  const delta=totalDelta(t);
+  const invest=t.crypto+t.stocks+t.etf;
+  const change=delta?`<div class="total-change ${delta.diff>=0?'up':'dn'}">${delta.diff>=0?'▲':'▼'} ${fmtWShort(Math.abs(delta.diff))} · 전일 대비</div>`:'';
+  return `<section class="hero"><div class="hero-label">총자산</div><div class="hero-amount" id="totalVal">${t.hasPrice?fmtW(t.total):'가격 업데이트 필요'}</div>${change}
+    <div class="hero-foot"><span>투자자산<b>${fmtW(invest)}</b></span><span>현금<b>${fmtW(t.cash)}</b></span></div></section>
+    ${renderAllocation(t)}
+    <div class="quick"><div class="qcard"><span>오늘 투자자산</span><b>${fmtWShort(invest)}</b></div><div class="qcard"><span>최근 기록 대비</span><b class="${delta&&delta.diff<0?'dn':'up'}">${delta?(delta.diff>=0?'+':'')+delta.pct.toFixed(1)+'%':'—'}</b></div></div>`;
+}
 
-  // 코인 목록
-  h+=`<div class="asset-section"><div class="sec-title"><span>🪙 코인</span><span style="font-weight:600;color:#b8860b">${fmtWShort(t.crypto)}</span></div><div class="asset-list">`;
-  live.crypto.forEach(item=>{
-    const val=calcAssetVal(item,'crypto');
-    const price=prices[item.market];
-    const chg=priceChanges[item.market];
-    const pct=t.crypto>0&&val!=null?(val/t.crypto*100).toFixed(1):'—';
-    const roi=item.buyPrice&&price?((price-item.buyPrice)/item.buyPrice*100):null;
-    h+=`<div class="asset-item">
-      <div class="ai-left">
-        <div class="ai-name">${escHtml(item.name)} <span style="font-size:11px;font-weight:400;color:var(--text3)">${price!=null?price.toLocaleString()+'원':''}</span></div>
-        <div class="ai-sub">
-          <span class="pct-badge">${pct}%</span>
-          ${chg!=null?`<span class="${chg>=0?'chg-up':'chg-dn'}">${chg>=0?'▲':'▼'}${Math.abs(chg).toFixed(2)}%</span>`:'<span style="font-size:10px;color:var(--text3)">일간—</span>'}
-        </div>
-        ${roi!=null?`<div class="ai-roi ${roi>=0?'up':'dn'}">${roi>=0?'+':''}${roi.toFixed(1)}% 수익률</div>`:''}
-      </div>
-      <div class="ai-right">
-        <div class="ai-val">${val!=null?fmtWShort(val):'—'}</div>
-      </div>
-    </div>`;
-  });
-  h+=`</div></div>`;
+function holdingGroup(label,mark,markClass,items,type,total,grandTotal){
+  const expanded=!!S.expandedHoldingGroups[type];
+  const visibleItems=expanded?items:items.slice(0,2);
+  const rows=visibleItems.map(item=>{
+    const value=type==='cash'?Number(item.amount)||0:calcAssetVal(item,type);
+    const code=type==='crypto'?`${item.market} · ${Number(item.qty||0).toLocaleString()}개`:type==='cash'?(item.memo||'원화 자산'):`${item.ticker} · ${Number(item.qty||0).toLocaleString()}주`;
+    const key=type==='crypto'?item.market:item.ticker;
+    const change=type==='cash'?null:priceChanges[key];
+    return `<div class="holding-row"><div class="holding-name">${escHtml(item.name)}<small>${escHtml(code)}</small></div><div class="holding-value">${value!=null?fmtWShort(value):item.manual?'수동 입력 필요':'시세 대기'}${change!=null?`<small class="${change>=0?'up':'dn'}">${change>=0?'+':''}${change.toFixed(2)}%</small>`:'<small>평가금</small>'}</div></div>`;
+  }).join('');
+  const share=grandTotal?total/grandTotal*100:0;
+  const toggle=items.length>2?`<button class="group-toggle" onclick="toggleHoldingGroup('${type}')">${expanded?'접기 ↑':`나머지 ${items.length-2}개 보기 ↓`}</button>`:'';
+  return `<section class="asset-group"><div class="group-head"><div class="group-title"><div class="asset-mark ${markClass}">${mark}</div><div><b>${label}</b><small>${items.length}개 항목</small></div></div><div class="group-total"><b>${fmtWShort(total)}</b><small>총자산 ${share.toFixed(1)}%</small></div></div>${rows||'<div class="holding-row"><span class="holding-name">등록된 자산이 없습니다</span></div>'}${toggle}</section>`;
+}
 
-  // 해외주식 목록
-  h+=`<div class="asset-section"><div class="sec-title"><span>📈 해외주식</span><span style="font-weight:600;color:#1a56b0">${fmtWShort(t.stocks)}</span></div><div class="asset-list">`;
-  live.stocks.forEach(item=>{
-    const val=calcAssetVal(item,'stock');
-    const price=prices[item.ticker];
-    const chg=priceChanges[item.ticker];
-    const pct=t.stocks>0&&val!=null?(val/t.stocks*100).toFixed(1):'—';
-    const roi=item.buyPrice&&price?((price-item.buyPrice)/item.buyPrice*100):null;
-    h+=`<div class="asset-item">
-      <div class="ai-left">
-        <div class="ai-name">${escHtml(item.name)} <span style="font-size:11px;font-weight:400;color:var(--text3)">${price!=null?'$'+price.toFixed(2):''}</span></div>
-        <div class="ai-sub">
-          <span class="pct-badge">${pct}%</span>
-          ${chg!=null?`<span class="${chg>=0?'chg-up':'chg-dn'}">${chg>=0?'▲':'▼'}${Math.abs(chg).toFixed(2)}%</span>`:'<span style="font-size:10px;color:var(--text3)">일간—</span>'}
-        </div>
-        ${roi!=null?`<div class="ai-roi ${roi>=0?'up':'dn'}">${roi>=0?'+':''}${roi.toFixed(1)}% 수익률</div>`:''}
-      </div>
-      <div class="ai-right">
-        <div class="ai-val">${val!=null?fmtWShort(val):item.manual?'수동필요':'—'}</div>
-      </div>
-    </div>`;
-  });
-  h+=`</div></div>`;
+function toggleHoldingGroup(type){
+  S.expandedHoldingGroups[type]=!S.expandedHoldingGroups[type];
+  render();
+}
 
-  // ETF 목록
-  h+=`<div class="asset-section"><div class="sec-title"><span>🏦 국내 ETF</span><span style="font-weight:600;color:#3b6d11">${fmtWShort(t.etf)}</span></div><div class="asset-list">`;
-  live.etf.forEach(item=>{
-    const val=calcAssetVal(item,'etf');
-    const price=prices[item.ticker];
-    const chg=priceChanges[item.ticker];
-    const pct=t.etf>0&&val!=null?(val/t.etf*100).toFixed(1):'—';
-    const roi=item.buyPrice&&price?((price-item.buyPrice)/item.buyPrice*100):null;
-    h+=`<div class="asset-item">
-      <div class="ai-left">
-        <div class="ai-name">${escHtml(item.name)} <span style="font-size:11px;font-weight:400;color:var(--text3)">${price!=null?price.toLocaleString()+'원':''}</span></div>
-        <div class="ai-sub">
-          <span class="pct-badge">${pct}%</span>
-          ${chg!=null?`<span class="${chg>=0?'chg-up':'chg-dn'}">${chg>=0?'▲':'▼'}${Math.abs(chg).toFixed(2)}%</span>`:'<span style="font-size:10px;color:var(--text3)">일간—</span>'}
-        </div>
-        ${roi!=null?`<div class="ai-roi ${roi>=0?'up':'dn'}">${roi>=0?'+':''}${roi.toFixed(1)}% 수익률</div>`:''}
-      </div>
-      <div class="ai-right">
-        <div class="ai-val">${val!=null?fmtWShort(val):'—'}</div>
-      </div>
-    </div>`;
-  });
-  h+=`</div></div>`;
-
-  // 환율
-  h+=`<div style="text-align:right;font-size:11px;color:var(--text3);padding:0 2px">환율: ${exRate!=null?exRate.toLocaleString():'—'} KRW/USD</div>`;
-  return h;
+function renderHoldings(t){
+  const invest=t.crypto+t.stocks+t.etf;
+  const count=live.crypto.length+live.stocks.length+live.etf.length;
+  return `<button type="button" class="search-shell" onclick="setV('manage')">⌕　종목명·티커 검색 및 자산 추가</button>
+    <div class="summary-strip"><div class="summary-item"><span>투자자산</span><b>${fmtW(invest)}</b></div><div class="summary-item"><span>현금 제외 비중</span><b>${t.total?(invest/t.total*100).toFixed(1):'0.0'}%</b></div></div>
+    ${holdingGroup('코인','CO','',live.crypto,'crypto',t.crypto,t.total)}
+    ${holdingGroup('해외주식','ST','stock',live.stocks,'stock',t.stocks,t.total)}
+    ${holdingGroup('ETF','ETF','etf',live.etf,'etf',t.etf,t.total)}
+    ${holdingGroup('현금·기타','₩','cash',live.cash,'cash',t.cash,t.total)}
+    <div class="fx-note">${count}개 투자 종목 · KRW/USD ${exRate!=null?exRate.toLocaleString():'—'}</div>`;
 }
 
 // ── 기록 뷰 ───────────────────────────────────────────────────
@@ -1073,23 +927,19 @@ function renderHistory(t){
   let h='';
 
   // 기간 탭
-  h+=`<div style="display:flex;gap:5px;margin-bottom:12px">
-    ${periods.map(p=>`<button onclick="setCP('${p}')" style="flex:1;padding:7px 4px;border:1px solid var(--border2);border-radius:var(--rs);font-size:12px;background:${S.chartPeriod===p?'var(--acc)':'var(--bg)'};color:${S.chartPeriod===p?'var(--bg)':'var(--text2)'};cursor:pointer;font-family:inherit;font-weight:${S.chartPeriod===p?'600':'400'}">${periodLabel[p]}</button>`).join('')}
+  h+=`<div class="period-tabs">
+    ${periods.map(p=>`<button class="period-tab ${S.chartPeriod===p?'on':''}" onclick="setCP('${p}')">${periodLabel[p]}</button>`).join('')}
   </div>`;
 
   // 투자금 변동 차트만
-  h+=`<div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;padding:0 2px">📈 투자금 변동 (코인·주식·ETF)</div>`;
   h+=renderChart(hist, S.chartPeriod, 'invest');
 
   // 최근 기록 목록
-  const recent=[...hist].reverse().slice(0,40);
-  h+=`<div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 6px;padding:0 2px">
-    <span style="font-size:12px;font-weight:600;color:var(--text2)">기록 내역 (${hist.length}일)</span>
-    <button onclick="clearHistory()" style="background:none;border:none;font-size:11px;color:var(--text3);cursor:pointer;font-family:inherit;padding:2px 6px">전체 삭제</button>
-  </div>`;
-  h+=`<div class="hist-list">`;
+  const recentAll=[...hist].reverse();
+  const recent=S.showAllHistory?recentAll:recentAll.slice(0,5);
+  h+=`<div class="record-list"><div class="record-head"><b>최근 기록</b><button onclick="clearHistory()">${hist.length}일 · 전체 삭제</button></div>`;
   recent.forEach((item,i)=>{
-    const prev=recent[i+1];
+    const prev=recentAll[i+1];
     const itemTotal=histInvest(item);
     const prevTotal=histInvest(prev);
     const diff=prev?itemTotal-prevTotal:0;
@@ -1106,9 +956,12 @@ function renderHistory(t){
       </div>
     </div>`;
   });
-  h+=`</div>`;
+  if(hist.length>5) h+=`<button class="history-toggle" onclick="toggleHistoryList()">${S.showAllHistory?'최근 5개만 보기 ↑':`나머지 ${hist.length-5}개 보기 ↓`}</button>`;
+  h+=`</div><button class="record-btn" onclick="updatePrices(true)">오늘 자산 기록하기</button>`;
   return h;
 }
+
+function toggleHistoryList(){S.showAllHistory=!S.showAllHistory;render();}
 
 function renderChart(hist, period, type){
   hist=hist.map(h=>({...h,total:type==='total' ? histInvest(h)+(Number(h.cash)||0) : histInvest(h)}));
@@ -1128,7 +981,7 @@ function renderChart(hist, period, type){
   const diff=lastVal-firstVal;
   const pct=((diff/firstVal)*100).toFixed(2);
   const isUp=diff>=0;
-  const clr=isUp?'#c0392b':'#1a56b0';
+  const clr=isUp?'var(--green)':'var(--red)';
 
   const W=360, H=130, PX=4, PY=10;
   const vals=filtered.map(h=>h.total);
@@ -1157,10 +1010,11 @@ function renderChart(hist, period, type){
   const maxX=PX+(maxIdx/(filtered.length-1))*(W-PX*2);
   const minX=PX+(minIdx/(filtered.length-1))*(W-PX*2);
 
-  return `<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px">
+  return `<div class="chart-card">
     <div style="margin-bottom:10px">
-      <div style="font-size:20px;font-weight:700;letter-spacing:-0.5px">${fmtW(lastVal)}</div>
-      <div style="font-size:13px;color:${clr};margin-top:3px">${isUp?'▲':'▼'} ${fmtWShort(Math.abs(diff))} (${Math.abs(pct)}%) · ${filtered[0].date.slice(0,7)} 대비</div>
+      <div class="chart-eyebrow">현재 투자자산</div>
+      <div class="chart-amount">${fmtW(lastVal)}</div>
+      <div class="chart-delta ${isUp?'up':'dn'}">${isUp?'▲':'▼'} ${fmtWShort(Math.abs(diff))} (${Math.abs(pct)}%) · ${filtered[0].date.slice(0,7)} 대비</div>
     </div>
     <svg viewBox="0 0 ${W} ${H+16}" style="width:100%;overflow:visible">
       <defs>
@@ -1347,7 +1201,7 @@ function renderTotalAssets(t){
         <div style="font-size:10px;color:var(--text3)">${fmtWShort(cashTotal)}</div>
       </div>
     </div>
-    ${monthDiff!==0?`<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:12px;color:${monthDiff>=0?'var(--red)':'var(--blue)'}">
+    ${monthDiff!==0?`<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:12px;color:${monthDiff>=0?'var(--green)':'var(--red)'}">
       이번 달 ${monthDiff>=0?'▲':'▼'} ${fmtWShort(Math.abs(monthDiff))}
     </div>`:''}
   </div>`;
@@ -1489,7 +1343,7 @@ function delCash(id){
 // ── 공유 코드 ─────────────────────────────────────────────────
 function setRoom(){
   const code=(document.getElementById('roomCodeInput').value||'').trim();
-  if(code.length<3){alert('3자 이상 입력해주세요');return;}
+  if(!/^[A-Za-z0-9_-]{3,20}$/.test(code)){alert('공유 코드는 3~20자의 영문, 숫자, 밑줄(_), 하이픈(-)만 사용할 수 있어요.');return;}
   localStorage.setItem('asset_room',code);
   ROOM=code;
   document.getElementById('roomSetup').style.display='none';
