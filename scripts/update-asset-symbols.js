@@ -6,6 +6,7 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const OUTPUT = path.join(ROOT, 'asset-symbols.json');
+const SCRIPT_OUTPUT = path.join(ROOT, 'asset-symbols.js');
 const US_ALIASES = {
   AAPL: ['애플'], AMZN: ['아마존'], BMNR: ['비트마인'], CRCL: ['써클'],
   GOOG: ['구글', '알파벳'], GOOGL: ['구글', '알파벳'], IREN: ['아이렌'],
@@ -107,7 +108,8 @@ async function main() {
   } catch (_) {}
   const payload = { version: 1, updatedAt, count: items.length, items };
   fs.writeFileSync(OUTPUT, `${JSON.stringify(payload)}\n`);
-  process.stdout.write(`asset-symbols.json: ${items.length} assets\n`);
+  fs.writeFileSync(SCRIPT_OUTPUT, `window.ASSET_SYMBOL_CATALOG=${JSON.stringify(payload)};\n`);
+  process.stdout.write(`asset-symbols.json + asset-symbols.js: ${items.length} assets\n`);
 }
 
 main().catch(error => {
