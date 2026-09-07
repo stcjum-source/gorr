@@ -114,6 +114,102 @@ check('sharing-code copy matches validation rules', () => {
   has('영문·숫자·_·- 조합으로 3~20자');
   assert.ok(!html.includes('아무 단어나 괜찮아요!'), 'misleading unrestricted-code copy remains');
 });
+check('Google Vision text with missing signs and won units still imports every Money transaction', () => {
+  const script=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).find(s=>s.includes('function parseTransactions'));
+  const context={localStorage:{getItem:()=>null,setItem(){},removeItem(){}},window:{addEventListener(){},scrollY:0,scrollTo(){}},document:{addEventListener(){},querySelector(){return null}},console,Date,Math,JSON,Number,String,Array,Object,Set,Map,RegExp,URLSearchParams,crypto:{randomUUID:()=> 'test-id'}};
+  vm.createContext(context); vm.runInContext(script,context);
+  const visionText=`6:19
+Busan
+<
+머니 2
+egood
+NELTE || 39
+16,284원
+전체
+충전
+사용
+9월
+GS25수영광안점
+2026.9.7. 오후 12:53:28
+머니+포인트 결제
+ET
+-8,706원
+결제
+코페이_키오스크_1
+2026.9.7. 오후 12:09:32
+머니+포인트 결제
+-58,984
+결제
+메가엠지씨커피 강남중앙점
+3,287원
+2026.9.6. 오전 9:16:03
+결제
+머니+포인트 결제
+코리아세븐강남중앙점
+-2,673원
+2026.9.6. 오전 9:15:11
+결제
+머니+포인트 결제
+의신상회
+2026.9.5. 오후 1:18:30
+머니+포인트 결제
+5,493원
+결제
+씨유 광장시장점
+2026.9.5. 오후 12:26:12
+머니+포인트 결제
+1,501원
+결제`;
+  const parsed=vm.runInContext(`parseTransactions(${JSON.stringify(visionText)},8)`,context);
+  assert.deepEqual(JSON.parse(JSON.stringify(parsed.items.map(({date,name,amt})=>({date,name,amt})))),[
+    {date:'2026-09-07',name:'GS25수영광안점',amt:8706},
+    {date:'2026-09-07',name:'코페이_키오스크_1',amt:58984},
+    {date:'2026-09-06',name:'메가엠지씨커피 강남중앙점',amt:3287},
+    {date:'2026-09-06',name:'코리아세븐강남중앙점',amt:2673},
+    {date:'2026-09-05',name:'의신상회',amt:5493},
+    {date:'2026-09-05',name:'씨유 광장시장점',amt:1501}
+  ]);
+});
+
+check('Money parser does not turn an explicit positive credit into an expense', () => {
+  const script=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).find(s=>s.includes('function parseTransactions'));
+  const context={localStorage:{getItem:()=>null,setItem(){},removeItem(){}},window:{addEventListener(){},scrollY:0,scrollTo(){}},document:{addEventListener(){},querySelector(){return null}},console,Date,Math,JSON,Number,String,Array,Object,Set,Map,RegExp,URLSearchParams,crypto:{randomUUID:()=> 'test-id'}};
+  vm.createContext(context); vm.runInContext(script,context);
+  const parsed=vm.runInContext(`parseTransactions('머니+포인트 결제\\n환불 상점\\n2026.9.8. 오후 1:00:00\\n+10,000원\\n결제',8)`,context);
+  assert.equal(parsed.items.length,0);
+});
+
+check('Money parser keeps a merchant and amount that OCR places on one line', () => {
+  const script=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).find(s=>s.includes('function parseTransactions'));
+  const context={localStorage:{getItem:()=>null,setItem(){},removeItem(){}},window:{addEventListener(){},scrollY:0,scrollTo(){}},document:{addEventListener(){},querySelector(){return null}},console,Date,Math,JSON,Number,String,Array,Object,Set,Map,RegExp,URLSearchParams,crypto:{randomUUID:()=> 'test-id'}};
+  vm.createContext(context); vm.runInContext(script,context);
+  const parsed=vm.runInContext(`parseTransactions('머니+포인트 결제\\n테스트상점 -12,300원\\n2026.9.8. 오후 1:00:00\\n결제',8)`,context);
+  assert.deepEqual(JSON.parse(JSON.stringify(parsed.items.map(({date,name,amt})=>({date,name,amt})))),[
+    {date:'2026-09-08',name:'테스트상점',amt:12300}
+  ]);
+});
+
+check('Money parser keeps cancellation markers inside their own transaction block', () => {
+  const script=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).find(s=>s.includes('function parseTransactions'));
+  const context={localStorage:{getItem:()=>null,setItem(){},removeItem(){}},window:{addEventListener(){},scrollY:0,scrollTo(){}},document:{addEventListener(){},querySelector(){return null}},console,Date,Math,JSON,Number,String,Array,Object,Set,Map,RegExp,URLSearchParams,crypto:{randomUUID:()=> 'test-id'}};
+  vm.createContext(context); vm.runInContext(script,context);
+  const text='머니+포인트 결제\n정상상점\n2026.9.8. 오후 1:00:00\n-1,000원\n다음상점\n2026.9.9. 오후 1:00:00\n결제 취소\n-2,000원';
+  const parsed=vm.runInContext(`parseTransactions(${JSON.stringify(text)},8)`,context);
+  assert.deepEqual(JSON.parse(JSON.stringify(parsed.items.map(({date,name,amt})=>({date,name,amt})))),[
+    {date:'2026-09-08',name:'정상상점',amt:1000}
+  ]);
+});
+
+check('Money parser rejects non-finite or unsafe OCR amounts', () => {
+  const script=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).find(s=>s.includes('function parseTransactions'));
+  const context={localStorage:{getItem:()=>null,setItem(){},removeItem(){}},window:{addEventListener(){},scrollY:0,scrollTo(){}},document:{addEventListener(){},querySelector(){return null}},console,Date,Math,JSON,Number,String,Array,Object,Set,Map,RegExp,URLSearchParams,crypto:{randomUUID:()=> 'test-id'}};
+  vm.createContext(context); vm.runInContext(script,context);
+  const huge='9'.repeat(400);
+  const text=`머니+포인트 결제\n오인식상점\n2026.9.8. 오후 1:00:00\n${huge}원\n결제`;
+  const parsed=vm.runInContext(`parseTransactions(${JSON.stringify(text)},8)`,context);
+  assert.equal(parsed.items.length,0);
+});
+
 check('Firebase keys and existing feature entry points are preserved', () => {
   for (const token of [
     'gorr-66f73', "'gagebu_room'", "'fgm'+YY+'_'+m", "'sgm'+YY+'_'+m",
