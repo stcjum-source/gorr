@@ -96,8 +96,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif;font
 .cat-wrap{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:14px}
 .cat-row{margin-bottom:12px}
 .cat-row:last-child{margin-bottom:0}
+.cat-summary-button{display:block;width:100%;padding:0;background:none;border:0;color:var(--text);font:inherit;text-align:left;cursor:pointer}
 .cat-top{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px}
 .cat-pct{font-size:11px;color:var(--text3)}
+.cat-chevron{display:inline-block;margin-left:5px;color:var(--text3);transition:transform .15s}
+.cat-summary-button[aria-expanded="true"] .cat-chevron{transform:rotate(180deg)}
 .bar-bg{background:var(--bg3);border-radius:3px;height:7px;overflow:hidden}
 .bar-fill{height:100%;background:var(--accent);border-radius:3px}
 .cat-detail-list{margin-top:10px;border-top:1px solid var(--border)}
@@ -434,7 +437,7 @@ function migrateIds(){
 }
 
 const today=new Date();
-let S={month:today.getMonth(),view:'list',person:'권능',showForm:false,editId:null,addingCat:false,showIncForm:false,incEditId:null,showImport:false,importMode:'shot',importText:'',importBusy:false,importStatus:'',importItems:[],importSkipped:0,importRaw:'',visionEdit:false,prefill:null,favEdit:false,batchRows:null,selMode:false,selIds:[],smOpen:{},expOpen:null,fixedEdit:false,fixedDraft:null};
+let S={month:today.getMonth(),view:'list',person:'권능',showForm:false,editId:null,addingCat:false,showIncForm:false,incEditId:null,showImport:false,importMode:'shot',importText:'',importBusy:false,importStatus:'',importItems:[],importSkipped:0,importRaw:'',visionEdit:false,prefill:null,favEdit:false,batchRows:null,selMode:false,selIds:[],smOpen:{},expOpen:null,catOpen:null,fixedEdit:false,fixedDraft:null};
 
 const INC_TYPES=['권능 월급','가영 월급','부수입 (권능)','부수입 (가영)','기타'];
 
@@ -711,18 +714,21 @@ function render(){
         const pct=totalVar>0?Math.round(total/totalVar*100):0;
         const k=keunCatMap[cat]||0,g=gayCatMap[cat]||0;
         const catItems=exps.filter(e=>e.cat===cat).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+        const open=S.catOpen===cat;
         h+=`<div class="cat-row">
-          <div class="cat-top"><span>${esc(cat)} <span class="cat-pct">${catItems.length}건</span></span><span><strong>${fmt(total)}</strong> <span class="cat-pct">${pct}%</span></span></div>
-          <div class="bar-bg"><div class="bar-fill" style="width:${Math.round(total/maxAll*100)}%"></div></div>
-          <div style="display:flex;gap:8px;margin-top:4px;font-size:11px;color:var(--text3)">
-            ${k?`<span>권능 ${fmt(k)}</span>`:''}${g?`<span>가영 ${fmt(g)}</span>`:''}
-          </div>
-          <div class="cat-detail-list">
+          <button type="button" class="cat-summary-button" onclick="toggleCategoryDetails(${esc(JSON.stringify(cat))})" aria-expanded="${open}">
+            <div class="cat-top"><span>${esc(cat)} <span class="cat-pct">${catItems.length}건</span><span class="cat-chevron">⌄</span></span><span><strong>${fmt(total)}</strong> <span class="cat-pct">${pct}%</span></span></div>
+            <div class="bar-bg"><div class="bar-fill" style="width:${Math.round(total/maxAll*100)}%"></div></div>
+            <div style="display:flex;gap:8px;margin-top:4px;font-size:11px;color:var(--text3)">
+              ${k?`<span>권능 ${fmt(k)}</span>`:''}${g?`<span>가영 ${fmt(g)}</span>`:''}
+            </div>
+          </button>
+          ${open?`<div class="cat-detail-list">
             ${catItems.map(e=>`<div class="cat-detail-item">
               <div class="cat-detail-copy"><div class="cat-detail-name">${esc(e.name||'(내용 없음)')}</div><div class="cat-detail-meta">${esc(e.date?dayLabel(e.date):'날짜 없음')} · ${esc(e.who||'사용자 없음')}</div></div>
               <div class="cat-detail-amount ${Number(e.amt)<0?'refund':''}">${Number(e.amt)<0?'+':'-'}${fmt(e.amt)}</div>
             </div>`).join('')}
-          </div>
+          </div>`:''}
         </div>`;
       });
       h+=`</div>`;
@@ -826,10 +832,10 @@ function render(){
   });
   window.scrollTo(0,_sy);
 }
-function goMonth(m){S.month=m;S.view='list';S.showForm=false;S.editId=null;S.showIncForm=false;S.incEditId=null;S.fixedEdit=false;S.fixedDraft=null;render();}
+function goMonth(m){S.month=m;S.view='list';S.showForm=false;S.editId=null;S.showIncForm=false;S.incEditId=null;S.catOpen=null;S.fixedEdit=false;S.fixedDraft=null;render();}
 
-function selM(i){S.month=i;S.showForm=false;S.editId=null;S.showIncForm=false;S.incEditId=null;S.prefill=null;S.favEdit=false;S.fixedEdit=false;S.fixedDraft=null;render();}
-function setV(v){S.view=v;S.showForm=false;S.editId=null;S.showIncForm=false;S.incEditId=null;S.prefill=null;S.favEdit=false;if(v!=='fixed'){S.fixedEdit=false;S.fixedDraft=null;}render();}
+function selM(i){S.month=i;S.showForm=false;S.editId=null;S.showIncForm=false;S.incEditId=null;S.prefill=null;S.favEdit=false;S.catOpen=null;S.fixedEdit=false;S.fixedDraft=null;render();}
+function setV(v){S.view=v;S.showForm=false;S.editId=null;S.showIncForm=false;S.incEditId=null;S.prefill=null;S.favEdit=false;if(v!=='cat')S.catOpen=null;if(v!=='fixed'){S.fixedEdit=false;S.fixedDraft=null;}render();}
 function openForm(id){S.prefill=null;S.showForm=true;S.editId=id;render();setTimeout(()=>{const el=document.getElementById('fName');if(el)el.focus({preventScroll:true});},80);}
 function closeForm(){S.showForm=false;S.editId=null;S.prefill=null;render();}
 // 지출 추가/수정 폼 HTML. isE=true면 수정(항목 자리 인라인), false면 신규(리스트 맨 위).
@@ -1031,6 +1037,7 @@ function dayLabel(d){
 }
 // 항목 탭 → 액션(자주·복제·수정·삭제) 아래로 펼침/접힘
 function toggleExpActions(id){S.expOpen=(S.expOpen===id)?null:id;render();}
+function toggleCategoryDetails(cat){S.catOpen=S.catOpen===cat?null:cat;render();}
 function applyFilter(){
   const q=(document.getElementById('searchInput')?.value||'').trim().toLowerCase();
   const cf=document.getElementById('catFilter')?.value||'';

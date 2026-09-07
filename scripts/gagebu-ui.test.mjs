@@ -71,11 +71,13 @@ check('summary keeps total-asset and family-note editors accessible', () => {
   assert.match(html, /<button[^>]*onclick="editAsset\(\)"[^>]*>총자산 수정/);
   assert.match(html, /<button[^>]*onclick="editFamilyNote\(\)"[^>]*>가족 메모 수정/);
 });
-check('category view shows every individual expense grouped by category', () => {
-  has('class="cat-detail-list"');
-  has('class="cat-detail-item"');
-  assert.match(html, /const catItems=exps\.filter\(e=>e\.cat===cat\)\.sort\(/);
-  assert.match(html, /catItems\.map\(e=>`[\s\S]*?cat-detail-name[\s\S]*?e\.name[\s\S]*?cat-detail-meta[\s\S]*?e\.date[\s\S]*?e\.who[\s\S]*?cat-detail-amount[\s\S]*?e\.amt/);
+check('category summaries expand to show individual expenses on tap', () => {
+  has('catOpen:null');
+  has('function toggleCategoryDetails(cat)');
+  has('class="cat-summary-button"');
+  has('aria-expanded="${open}"');
+  assert.match(html, /const open=S\.catOpen===cat/);
+  assert.match(html, /open\?`<div class="cat-detail-list">[\s\S]*?catItems\.map\(e=>`[\s\S]*?cat-detail-name[\s\S]*?e\.name[\s\S]*?cat-detail-meta[\s\S]*?e\.date[\s\S]*?e\.who[\s\S]*?cat-detail-amount[\s\S]*?e\.amt/);
 });
 check('fixed expenses are view-first with explicit edit mode and save bar', () => {
   has('fixedEdit:false'); has('function toggleFixedEdit()'); has('고정지출 관리'); has('class="fixed-save-dock"');
