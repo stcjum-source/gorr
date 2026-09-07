@@ -1197,22 +1197,45 @@ function parseCardApp(lines,defaultMonth){
   }
   return {items:out,skipped};
 }
-// 삼성월렛/삼성페이: [가맹점] -금액원 / YYYY.M.D. 오후 h:mm:ss / 이벤트 결제 / 머니+포인트 결제
+// 머니 사용내역: OCR은 금액의 '-'·'원'을 자주 누락하고 줄 순서를 바꾼다.
+// 날짜를 거래 앵커로 삼고, 날짜 앞의 상호명과 주변의 첫 금액을 한 묶음으로 읽는다.
+function samsungLooseAmount(line){
+  const s=String(line||'').trim();
+  const m=s.match(/(?:^|\s)([+-]?)\s*(\d{1,3}(?:,\d{3})+|\d{2,})\s*원?\s*$/);
+  if(!m)return null;
+  const amt=Number(m[2].replace(/,/g,''));
+  if(!Number.isSafeInteger(amt)||amt<10)return null;
+  return {sign:m[1]||'',amt,raw:m[0]};
+}
+function samsungMerchantBefore(lines,dateIdx,previousDateIdx){
+  for(let j=dateIdx-1;j>previousDateIdx;j--){
+    const l=String(lines[j]||'').trim();
+    const a=samsungLooseAmount(l);
+    if(a){
+      const same=l.replace(a.raw,'').trim();
+      if(/[가-힣A-Za-z]/.test(same)&&!isJunkLine(same))return {name:same,index:j,amount:a};
+      continue;
+    }
+    if(/[가-힣A-Za-z]/.test(l)&&!isJunkLine(l)&&!/머니\s*\+?\s*포인트|이벤트\s*결제|^결제$/.test(l))return {name:l,index:j};
+  }
+  return {name:'',index:dateIdx};
+}
 function parseSamsung(lines){
   const out=[];let skipped=0;
-  const amtIdx=[];lines.forEach((l,i)=>{const a=lineAmount(l);if(a&&a.sign==='-')amtIdx.push(i);});
-  for(let k=0;k<amtIdx.length;k++){
-    const i=amtIdx[k],a=lineAmount(lines[i]);
-    const winEnd=Math.min(k+1<amtIdx.length?amtIdx[k+1]-1:lines.length-1,i+4);
-    const meta=lines.slice(i+1,winEnd+1);
-    let name=lines[i].replace(a.raw,'').trim();
-    if(!/[가-힣A-Za-z]/.test(name)){for(let j=i-1;j>=(k>0?amtIdx[k-1]+1:0);j--){if(!isJunkLine(lines[j])){name=lines[j];break;}}}
-    const around=meta.join(' ')+' '+lines[i];
-    if(isCancelled(around)||isNonExpense(around)){skipped++;continue;}
-    let dt=null;for(const ml of meta){dt=parseAnyDate(ml,YEAR);if(dt)break;}
-    const date=dt?mkDate(dt.y,dt.m,dt.d):null;
-    if(!date){skipped++;continue;}
-    out.push(mkItem(date,name,a.amt,'expense'));
+  const dates=[];
+  lines.forEach((l,i)=>{const dt=parseAnyDate(l,YEAR);if(dt&&mkDate(dt.y,dt.m,dt.d))dates.push({i,dt});});
+  for(let k=0;k<dates.length;k++){
+    const {i,dt}=dates[k],prev=k?dates[k-1].i:-1,next=k+1<dates.length?dates[k+1].i:lines.length;
+    const merchant=samsungMerchantBefore(lines,i,prev),name=merchant.name;
+    let amount=merchant.amount||null,amountIdx=merchant.amount?merchant.index:-1;
+    // 일반 순서: 상호명 → 금액 → 날짜. 현재 상호명보다 앞의 잔액/이전 거래 금액은 보지 않는다.
+    for(let j=i-1;j>merchant.index;j--){const a=samsungLooseAmount(lines[j]);if(a){amount=a;amountIdx=j;break;}}
+    // 실제 Google Vision 순서: 상호명 → 날짜 → 결제방식 → 금액
+    if(!amount){for(let j=i+1;j<next;j++){const a=samsungLooseAmount(lines[j]);if(a){amount=a;amountIdx=j;break;}}}
+    const around=lines.slice(Math.max(prev+1,merchant.index),Math.min(next,Math.max(i,amountIdx)+4)).join(' ');
+    if(!name||!amount||amount.sign==='+'||isCancelled(around)||isNonExpense(around)){skipped++;continue;}
+    const date=mkDate(dt.y,dt.m,dt.d);
+    out.push(mkItem(date,name,amount.amt,'expense'));
   }
   return {items:out,skipped};
 }
