@@ -100,6 +100,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif;font
 .cat-pct{font-size:11px;color:var(--text3)}
 .bar-bg{background:var(--bg3);border-radius:3px;height:7px;overflow:hidden}
 .bar-fill{height:100%;background:var(--accent);border-radius:3px}
+.cat-detail-list{margin-top:10px;border-top:1px solid var(--border)}
+.cat-detail-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.cat-detail-item:last-child{border-bottom:none;padding-bottom:0}
+.cat-detail-copy{min-width:0;flex:1}
+.cat-detail-name{font-size:13px;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cat-detail-meta{margin-top:3px;font-size:11px;color:var(--text3)}
+.cat-detail-amount{flex-shrink:0;font-size:13px;font-weight:700;color:var(--red)}
+.cat-detail-amount.refund{color:var(--green)}
 .fixed-box{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:10px}
 .fixed-header{padding:8px 13px;background:var(--bg2);font-size:11px;font-weight:600;color:var(--text2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between}
 .fixed-item{display:flex;align-items:center;padding:9px 13px;border-bottom:1px solid var(--border);font-size:13px;gap:8px}
@@ -702,11 +710,18 @@ function render(){
       allCatList.forEach(([cat,total])=>{
         const pct=totalVar>0?Math.round(total/totalVar*100):0;
         const k=keunCatMap[cat]||0,g=gayCatMap[cat]||0;
+        const catItems=exps.filter(e=>e.cat===cat).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
         h+=`<div class="cat-row">
-          <div class="cat-top"><span>${esc(cat)}</span><span><strong>${fmt(total)}</strong> <span class="cat-pct">${pct}%</span></span></div>
+          <div class="cat-top"><span>${esc(cat)} <span class="cat-pct">${catItems.length}건</span></span><span><strong>${fmt(total)}</strong> <span class="cat-pct">${pct}%</span></span></div>
           <div class="bar-bg"><div class="bar-fill" style="width:${Math.round(total/maxAll*100)}%"></div></div>
           <div style="display:flex;gap:8px;margin-top:4px;font-size:11px;color:var(--text3)">
             ${k?`<span>권능 ${fmt(k)}</span>`:''}${g?`<span>가영 ${fmt(g)}</span>`:''}
+          </div>
+          <div class="cat-detail-list">
+            ${catItems.map(e=>`<div class="cat-detail-item">
+              <div class="cat-detail-copy"><div class="cat-detail-name">${esc(e.name||'(내용 없음)')}</div><div class="cat-detail-meta">${esc(e.date?dayLabel(e.date):'날짜 없음')} · ${esc(e.who||'사용자 없음')}</div></div>
+              <div class="cat-detail-amount ${Number(e.amt)<0?'refund':''}">${Number(e.amt)<0?'+':'-'}${fmt(e.amt)}</div>
+            </div>`).join('')}
           </div>
         </div>`;
       });
