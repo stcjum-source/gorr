@@ -1183,6 +1183,8 @@ function parseTransactions(raw,defaultMonth){
   if(/머니\s*\+?\s*포인트\s*결제|이벤트\s*결제|결제\s*취소/.test(all)&&/20\d{2}\s*[.\-]/.test(all))return parseSamsung(lines);
   // 카드앱(뱅크샐러드 등): "가맹점 | 카드" 줄 + "N일 요일" 헤더. 금액 위·이름 아래 구조라 전용 파서.
   if(/(동백전\s*체크카드|BC\s*바로\s*ZONE\s*카드|현대카드\s*ZERO|토스뱅크\s*체크카드|쿠팡\s*와우\s*카드|K-?패스\(신용\))/.test(all)&&/\d{1,2}\s*일\s*(월|화|수|목|금|토|일)요일/.test(all))return parseCardApp(lines,defaultMonth);
+  // 카카오페이가 섞인 자산 달력 화면. 금액 다음에 상호명이 오는 구조라 일반 텍스트 파서보다 먼저 처리한다.
+  if(/전체\s*카드/.test(all)&&/입[·・\s]*출금/.test(all)&&/\d{1,2}일\s*(월|화|수|목|금|토|일)요일/.test(all))return parseKakaoCalendar(lines,defaultMonth);
   // 카카오페이 전용 마커(페이머니)가 있을 때만 카카오 파서.
   if(/카카오페이머니|[·・]\s*페이머니/.test(all))return parseKakao(lines,defaultMonth);
   return parseImportText(raw,defaultMonth);
@@ -1261,21 +1263,92 @@ function parseSamsung(lines){
   }
   return {items:out,skipped};
 }
-// 카카오페이: "8월 · 페이머니" 월 헤더, "22일 토요일 -합계" 일자 헤더, 가맹점/금액 순.
-function parseKakao(lines,defaultMonth){
-  const out=[];let skipped=0,month=defaultMonth+1,day=null;
-  const monH=lines.find(l=>/(\d{1,2})월\s*[·・]/.test(l));if(monH)month=Number(monH.match(/(\d{1,2})월/)[1]);
-  for(let i=0;i<lines.length;i++){
-    const dh=lines[i].match(/^(\d{1,2})일\s*(월|화|수|목|금|토|일)요일/);
-    if(dh){day=Number(dh[1]);continue;} // 일자 헤더의 합계 금액은 거래로 잡지 않음
-    const mh=lines[i].match(/^(\d{1,2})월(\s|$|[·・])/);if(mh){month=Number(mh[1]);continue;}
-    const a=lineAmount(lines[i]);if(!a)continue;
-    let name=lines[i].replace(a.raw,'').trim();
-    if(!/[가-힣A-Za-z]/.test(name)){for(let j=i-1;j>=0;j--){if(/^(\d{1,2})일\s*(월|화|수|목|금|토|일)요일/.test(lines[j]))break;if(!isJunkLine(lines[j])){name=lines[j];break;}}}
-    if(isNonExpense(name)||isCancelled(name)){skipped++;continue;}
-    const date=mkDate(YEAR,month,day);
+const KAKAO_DAY_RE=/^(\d{1,2})일\s*(월|화|수|목|금|토|일)요일/;
+function isKakaoNoiseLine(line){
+  const s=String(line||'').trim();
+  return !s||isJunkLine(s)||lineAmount(s)||KAKAO_DAY_RE.test(s)
+    ||/^[가-힣A-Za-z]$/.test(s)
+    ||/^(?:[WA₩]|완충|[●•@]?pay|ppay|coupang|couping|coupling)$/i.test(s)
+    ||/^(?:내역|카드만들기|전체\s*카드|입[·・\s]*출금|투자|페이[·・]기타|[<>←▶◀])$/i.test(s);
+}
+function kakaoBestName(lines,start,end){
+  const candidates=[];
+  for(let i=start;i<end;i++){
+    const s=String(lines[i]||'').trim();
+    if(!isKakaoNoiseLine(s)&&/[가-힣A-Za-z]/.test(s))candidates.push(s);
+  }
+  if(!candidates.length)return '';
+  return candidates.sort((a,b)=>{
+    const priority=s=>(/송금/.test(s)?100:0)+(/내\s*카카오페이/.test(s)?50:0)+s.length;
+    return priority(b)-priority(a);
+  })[0];
+}
+function kakaoDayHeader(line){
+  const m=String(line||'').match(/^(\d{1,2})일\s*(월|화|수|목|금|토|일)요일(?:\s*([+-]?)\s*([\d,]+)\s*원)?/);
+  if(!m)return null;
+  const total=m[4]?Number(m[4].replace(/,/g,'')):null;
+  return {day:Number(m[1]),outflow:m[3]==='-'&&Number.isSafeInteger(total)?total:(total===0?0:null)};
+}
+function kakaoSubset(amounts,target){
+  if(target==null||amounts.length>12)return null;
+  if(target===0)return new Set();
+  let match=null;
+  for(let mask=1;mask<(1<<amounts.length);mask++){
+    let sum=0;for(let i=0;i<amounts.length;i++)if(mask&(1<<i))sum+=amounts[i];
+    if(sum===target){
+      if(match)return null; // 둘 이상의 조합이 가능하면 의미 기반 기본 선택을 임의로 덮지 않는다.
+      match=new Set(amounts.map((_,i)=>i).filter(i=>mask&(1<<i)));
+    }
+  }
+  return match;
+}
+function applyKakaoDaySelection(items,outflow){
+  const expenseIndexes=items.map((it,i)=>it.kind==='expense'?i:-1).filter(i=>i>=0);
+  const chosen=kakaoSubset(expenseIndexes.map(i=>items[i].amt),outflow);
+  if(!chosen)return;
+  expenseIndexes.forEach((itemIndex,subsetIndex)=>{items[itemIndex].selected=chosen.has(subsetIndex);});
+}
+// 카카오가 포함된 자산 달력: 금액 뒤 상호명을 다음 금액/날짜 전까지 찾아 연결한다.
+function parseKakaoCalendar(lines,defaultMonth){
+  const out=[];let skipped=0,month=defaultMonth+1;
+  const monH=lines.find(l=>/(?:^|\s)(\d{1,2})월(?:\s|$|[<>▶◀·・])/.test(l));
+  if(monH)month=Number(monH.match(/(\d{1,2})월/)[1]);
+  const days=[];lines.forEach((line,i)=>{const h=kakaoDayHeader(line);if(h)days.push({...h,i});});
+  for(let d=0;d<days.length;d++){
+    const header=days[d],end=d+1<days.length?days[d+1].i:lines.length,date=mkDate(YEAR,month,header.day);
     if(!date){skipped++;continue;}
-    out.push(mkItem(date,name,a.amt,a.sign==='+'?'income':'expense'));
+    const dayItems=[];
+    for(let i=header.i+1;i<end;i++){
+      const amount=lineAmount(lines[i]);if(!amount)continue;
+      let next=i+1;while(next<end&&!lineAmount(lines[next]))next++;
+      const name=kakaoBestName(lines,i+1,next);
+      if(!name){skipped++;continue;}
+      const incoming=amount.sign==='+'||(!amount.sign&&/내\s*카카오페이/.test(name)&&!/송금/.test(name));
+      const item=mkItem(date,name,amount.amt,incoming?'income':'expense');
+      dayItems.push(item);
+    }
+    applyKakaoDaySelection(dayItems,header.outflow);out.push(...dayItems);
+  }
+  return {items:out,skipped};
+}
+// 카카오페이 상세내역: 날짜별 표시 합계와 개별 금액을 비교해 회색 제외 거래를 자동 해제한다.
+function parseKakao(lines,defaultMonth){
+  const out=[];let skipped=0,month=defaultMonth+1;
+  const monH=lines.find(l=>/(\d{1,2})월\s*[.·・]/.test(l));if(monH)month=Number(monH.match(/(\d{1,2})월/)[1]);
+  const days=[];lines.forEach((line,i)=>{const h=kakaoDayHeader(line);if(h)days.push({...h,i});});
+  for(let d=0;d<days.length;d++){
+    const header=days[d],end=d+1<days.length?days[d+1].i:lines.length,date=mkDate(YEAR,month,header.day);
+    if(!date){skipped++;continue;}
+    const dayItems=[];let segmentStart=header.i+1;
+    for(let i=header.i+1;i<end;i++){
+      const amount=lineAmount(lines[i]);if(!amount)continue;
+      const same=lines[i].replace(amount.raw,'').trim();
+      const name=(!isKakaoNoiseLine(same)&&/[가-힣A-Za-z]/.test(same))?same:kakaoBestName(lines,segmentStart,i);
+      segmentStart=i+1;
+      if(!name||isNonExpense(name)||isCancelled(name)){skipped++;continue;}
+      dayItems.push(mkItem(date,name,amount.amt,amount.sign==='+'?'income':'expense'));
+    }
+    applyKakaoDaySelection(dayItems,header.outflow);out.push(...dayItems);
   }
   return {items:out,skipped};
 }

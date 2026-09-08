@@ -6,6 +6,7 @@ import vm from 'node:vm';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const html = readFileSync(resolve(here, '..', 'gagebu.html'), 'utf8');
+const kakaoFixtures = JSON.parse(readFileSync(resolve(here, 'fixtures', 'gagebu-kakao-ocr-qa.json'), 'utf8'));
 const css = html.match(/<style>([\s\S]*?)<\/style>/)?.[1] ?? '';
 const failures = [];
 const check = (name, fn) => {
@@ -216,6 +217,51 @@ check('Money parser rejects non-finite or unsafe OCR amounts', () => {
   const text=`머니+포인트 결제\n오인식상점\n2026.9.8. 오후 1:00:00\n${huge}원\n결제`;
   const parsed=vm.runInContext(`parseTransactions(${JSON.stringify(text)},8)`,context);
   assert.equal(parsed.items.length,0);
+});
+
+check('Kakao calendar OCR pairs forward merchant names and classifies incoming transfers', () => {
+  const script=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).find(s=>s.includes('function parseTransactions'));
+  const context={localStorage:{getItem:()=>null,setItem(){},removeItem(){}},window:{addEventListener(){},scrollY:0,scrollTo(){}},document:{addEventListener(){},querySelector(){return null}},console,Date,Math,JSON,Number,String,Array,Object,Set,Map,RegExp,URLSearchParams,crypto:{randomUUID:()=> 'test-id'}};
+  vm.createContext(context); vm.runInContext(script,context);
+  for(const fixture of kakaoFixtures.slice(0,2)){
+    const parsed=vm.runInContext(`parseTransactions(${JSON.stringify(fixture.raw)},7)`,context);
+    const actual=JSON.parse(JSON.stringify(parsed.items.map(({date,name,amt,kind,selected})=>({date,name,amt,kind,selected}))));
+    assert.deepEqual(actual,fixture.expected,fixture.id);
+  }
+});
+
+check('Kakao detail OCR uses each day total to select real outflows and suppress excluded transfers', () => {
+  const script=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).find(s=>s.includes('function parseTransactions'));
+  const context={localStorage:{getItem:()=>null,setItem(){},removeItem(){}},window:{addEventListener(){},scrollY:0,scrollTo(){}},document:{addEventListener(){},querySelector(){return null}},console,Date,Math,JSON,Number,String,Array,Object,Set,Map,RegExp,URLSearchParams,crypto:{randomUUID:()=> 'test-id'}};
+  vm.createContext(context); vm.runInContext(script,context);
+  for(const fixture of kakaoFixtures.slice(2,5)){
+    const parsed=vm.runInContext(`parseTransactions(${JSON.stringify(fixture.raw)},7)`,context);
+    const actual=JSON.parse(JSON.stringify(parsed.items.map(({date,name,amt,kind,selected})=>({date,name,amt,kind,selected}))));
+    assert.deepEqual(actual,fixture.expected,fixture.id);
+  }
+});
+
+check('card app detection takes precedence over the Kakao-style calendar shell', () => {
+  const script=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).find(s=>s.includes('function parseTransactions'));
+  const context={localStorage:{getItem:()=>null,setItem(){},removeItem(){}},window:{addEventListener(){},scrollY:0,scrollTo(){}},document:{addEventListener(){},querySelector(){return null}},console,Date,Math,JSON,Number,String,Array,Object,Set,Map,RegExp,URLSearchParams,crypto:{randomUUID:()=> 'test-id'}};
+  vm.createContext(context); vm.runInContext(script,context);
+  const text='전체 카드\n입출금\n8월\n26일 수요일\n-5,100원\n가맹점 | 부산 동백전 체크카드';
+  const parsed=vm.runInContext(`parseTransactions(${JSON.stringify(text)},7)`,context);
+  assert.deepEqual(JSON.parse(JSON.stringify(parsed.items.map(({date,name,amt})=>({date,name,amt})))),[
+    {date:'2026-08-26',name:'가맹점',amt:5100}
+  ]);
+});
+
+check('ambiguous Kakao day-total subsets preserve semantic default selection', () => {
+  const script=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).find(s=>s.includes('function parseTransactions'));
+  const context={localStorage:{getItem:()=>null,setItem(){},removeItem(){}},window:{addEventListener(){},scrollY:0,scrollTo(){}},document:{addEventListener(){},querySelector(){return null}},console,Date,Math,JSON,Number,String,Array,Object,Set,Map,RegExp,URLSearchParams,crypto:{randomUUID:()=> 'test-id'}};
+  vm.createContext(context); vm.runInContext(script,context);
+  const text='8월. 페이머니\n1일 토요일 -10,000원\n송금 카카오페이머니→ 이*능\npay\n-10,000원\n정상상점\npay\n-10,000원';
+  const parsed=vm.runInContext(`parseTransactions(${JSON.stringify(text)},7)`,context);
+  assert.deepEqual(JSON.parse(JSON.stringify(parsed.items.map(({name,selected})=>({name,selected})))),[
+    {name:'송금 카카오페이머니→ 이*능',selected:false},
+    {name:'정상상점',selected:true}
+  ]);
 });
 
 check('Firebase keys and existing feature entry points are preserved', () => {
