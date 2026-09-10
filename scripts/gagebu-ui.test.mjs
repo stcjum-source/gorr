@@ -241,6 +241,67 @@ check('Kakao detail OCR uses each day total to select real outflows and suppress
   }
 });
 
+check('Kakao detail OCR accepts a plain Pay Money header and a Today transaction block', () => {
+  const script=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).find(s=>s.includes('function parseTransactions'));
+  const context={localStorage:{getItem:()=>null,setItem(){},removeItem(){}},window:{addEventListener(){},scrollY:0,scrollTo(){}},document:{addEventListener(){},querySelector(){return null}},console,Date,Math,JSON,Number,String,Array,Object,Set,Map,RegExp,URLSearchParams,crypto:{randomUUID:()=> 'test-id'}};
+  vm.createContext(context); vm.runInContext(script,context);
+  const text=`4:07 $
+←
+(TALK
+LTE
+Till 40
+내역
+카드만들기
+<
+•
+9월 페이머니
+출금 4,000원 입금 106,025원
+출금 (송금, 결제 등)
+오늘 2,600원
+이번 달 예산 설정하고
+확인하기
+실시간 지출 그래프 확인해요
+무학로 슈퍼
+pay
+-600원
+삼립부산푸드유통
+pay
+2,000원
+9일 수요일 -1,400원
+pay
+(주)휴디앤씨
+-1,400원
+8월 내역 더보기`;
+  const parsed=vm.runInContext(`parseTransactions(${JSON.stringify(text)},8)`,context);
+  assert.deepEqual(JSON.parse(JSON.stringify(parsed.items.map(({date,name,amt,kind,selected})=>({date,name,amt,kind,selected})))),[
+    {date:'2026-09-10',name:'무학로 슈퍼',amt:600,kind:'expense',selected:true},
+    {date:'2026-09-10',name:'삼립부산푸드유통',amt:2000,kind:'expense',selected:true},
+    {date:'2026-09-09',name:'(주)휴디앤씨',amt:1400,kind:'expense',selected:true}
+  ]);
+});
+
+check('Kakao detail detection preserves the separator-only Pay Money marker', () => {
+  const script=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).find(s=>s.includes('function parseTransactions'));
+  const context={localStorage:{getItem:()=>null,setItem(){},removeItem(){}},window:{addEventListener(){},scrollY:0,scrollTo(){}},document:{addEventListener(){},querySelector(){return null}},console,Date,Math,JSON,Number,String,Array,Object,Set,Map,RegExp,URLSearchParams,crypto:{randomUUID:()=> 'test-id'}};
+  vm.createContext(context); vm.runInContext(script,context);
+  const text='· 페이머니\n9일 수요일 -1,400원\n(주)휴디앤씨\npay\n-1,400원';
+  const parsed=vm.runInContext(`parseTransactions(${JSON.stringify(text)},8)`,context);
+  assert.deepEqual(JSON.parse(JSON.stringify(parsed.items.map(({date,name,amt})=>({date,name,amt})))),[
+    {date:'2026-09-09',name:'(주)휴디앤씨',amt:1400}
+  ]);
+});
+
+check('generic Pay Money prose does not hijack normal day-based imports', () => {
+  const script=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).find(s=>s.includes('function parseTransactions'));
+  const context={localStorage:{getItem:()=>null,setItem(){},removeItem(){}},window:{addEventListener(){},scrollY:0,scrollTo(){}},document:{addEventListener(){},querySelector(){return null}},console,Date,Math,JSON,Number,String,Array,Object,Set,Map,RegExp,URLSearchParams,crypto:{randomUUID:()=> 'test-id'}};
+  vm.createContext(context); vm.runInContext(script,context);
+  const text='9월 페이머니 적립 안내\n9일 수요일\n-1,400원\n일반상점';
+  const parsed=vm.runInContext(`parseTransactions(${JSON.stringify(text)},8)`,context);
+  assert.deepEqual(JSON.parse(JSON.stringify(parsed.items.map(({date,name,amt})=>({date,name,amt})))),[
+    {date:'2026-09-09',name:'일반상점',amt:1400}
+  ]);
+});
+
 check('card app detection takes precedence over the Kakao-style calendar shell', () => {
   const script=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).find(s=>s.includes('function parseTransactions'));
   const context={localStorage:{getItem:()=>null,setItem(){},removeItem(){}},window:{addEventListener(){},scrollY:0,scrollTo(){}},document:{addEventListener(){},querySelector(){return null}},console,Date,Math,JSON,Number,String,Array,Object,Set,Map,RegExp,URLSearchParams,crypto:{randomUUID:()=> 'test-id'}};

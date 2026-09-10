@@ -1185,8 +1185,9 @@ function parseTransactions(raw,defaultMonth){
   if(/(동백전\s*체크카드|BC\s*바로\s*ZONE\s*카드|현대카드\s*ZERO|토스뱅크\s*체크카드|쿠팡\s*와우\s*카드|K-?패스\(신용\))/.test(all)&&/\d{1,2}\s*일\s*(월|화|수|목|금|토|일)요일/.test(all))return parseCardApp(lines,defaultMonth);
   // 카카오페이가 섞인 자산 달력 화면. 금액 다음에 상호명이 오는 구조라 일반 텍스트 파서보다 먼저 처리한다.
   if(/전체\s*카드/.test(all)&&/입[·・\s]*출금/.test(all)&&/\d{1,2}일\s*(월|화|수|목|금|토|일)요일/.test(all))return parseKakaoCalendar(lines,defaultMonth);
-  // 카카오페이 전용 마커(페이머니)가 있을 때만 카카오 파서.
-  if(/카카오페이머니|[·・]\s*페이머니/.test(all))return parseKakao(lines,defaultMonth);
+  // 카카오페이 상세내역은 월 헤더 한 줄 또는 송금 행의 '카카오페이머니' 표식으로만 판별한다.
+  const kakaoHeader=lines.some(l=>/^(?:\d{1,2}월\s*[.·・]?\s*|[·・]\s*)페이머니(?:\s*[♡♥.]*)?$/.test(l));
+  if(/카카오페이머니/.test(all)||kakaoHeader)return parseKakao(lines,defaultMonth);
   return parseImportText(raw,defaultMonth);
 }
 // 카드앱(뱅크샐러드 등): 로고글자→금액→"가맹점 | 카드" 순. "가맹점|카드" 줄을 앵커로 삼고
@@ -1269,6 +1270,7 @@ function isKakaoNoiseLine(line){
   return !s||isJunkLine(s)||lineAmount(s)||KAKAO_DAY_RE.test(s)
     ||/^[가-힣A-Za-z]$/.test(s)
     ||/^(?:[WA₩]|완충|[●•@]?pay|ppay|coupang|couping|coupling)$/i.test(s)
+    ||/^(?:이번\s*달\s*예산\s*설정하고|확인하기|실시간\s*지출\s*그래프\s*확인해요|출금\s*\(송금,?\s*결제\s*등\))$/i.test(s)
     ||/^(?:내역|카드만들기|전체\s*카드|입[·・\s]*출금|투자|페이[·・]기타|[<>←▶◀])$/i.test(s);
 }
 function kakaoBestName(lines,start,end){
@@ -1334,8 +1336,15 @@ function parseKakaoCalendar(lines,defaultMonth){
 // 카카오페이 상세내역: 날짜별 표시 합계와 개별 금액을 비교해 회색 제외 거래를 자동 해제한다.
 function parseKakao(lines,defaultMonth){
   const out=[];let skipped=0,month=defaultMonth+1;
-  const monH=lines.find(l=>/(\d{1,2})월\s*[.·・]/.test(l));if(monH)month=Number(monH.match(/(\d{1,2})월/)[1]);
-  const days=[];lines.forEach((line,i)=>{const h=kakaoDayHeader(line);if(h)days.push({...h,i});});
+  const monH=lines.find(l=>/(\d{1,2})월\s*[.·・]?\s*페이머니/.test(l));if(monH)month=Number(monH.match(/(\d{1,2})월/)[1]);
+  // '오늘'은 화면에 실제 날짜가 없으므로, 이 달이 진짜 이번 달일 때만 오늘 날짜로 확정한다.
+  // (거래가 없는 날은 헤더 자체가 없어 '가장 가까운 다음 헤더+1'로는 날짜를 추정할 수 없다.)
+  const now=new Date(),todayDay=(now.getFullYear()===YEAR&&now.getMonth()+1===month)?now.getDate():null;
+  const days=[];lines.forEach((line,i)=>{
+    const h=kakaoDayHeader(line);if(h){days.push({...h,i});return;}
+    const today=String(line||'').match(/^오늘\s*([+-]?)\s*([\d,]+)\s*원/);
+    if(today&&todayDay){const total=Number(today[2].replace(/,/g,''));days.push({day:todayDay,outflow:Number.isSafeInteger(total)?total:null,i});}
+  });
   for(let d=0;d<days.length;d++){
     const header=days[d],end=d+1<days.length?days[d+1].i:lines.length,date=mkDate(YEAR,month,header.day);
     if(!date){skipped++;continue;}
