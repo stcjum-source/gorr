@@ -171,27 +171,49 @@ function calcAssetVal(item, type){
   }else if(type==='stock'){
     if(item.manual) return null;
     const p=prices[item.ticker];
-    return p!=null && exRate!=null ? item.qty*p*exRate : null;
+    if(p!=null){
+      return isDomesticAsset(item) ? item.qty*p : (exRate!=null?item.qty*p*exRate:null);
+    }
+    return null;
   }else if(type==='etf'){
     if(item.manual) return null;
     const p=prices[item.ticker];
     if(p!=null){
-      return item.currency==='USD' ? (exRate!=null?item.qty*p*exRate:null) : item.qty*p;
+      return isDomesticAsset(item) ? item.qty*p : (exRate!=null?item.qty*p*exRate:null);
     }
     return null;
   }
   return null;
 }
 function calcTotals(assets=scopedAssets()){
-  let cryptoTotal=0,stockTotal=0,etfTotal=0,cashTotal=0;
+  let cryptoTotal=0,stockTotal=0,etfTotal=0,cashTotal=0,domesticTotal=0,foreignTotal=0;
   let hasCrypto=false,hasStock=false,hasEtf=false;
   assets.crypto.forEach(i=>{const v=calcAssetVal(i,'crypto');if(v!=null){cryptoTotal+=v;hasCrypto=true;}});
-  assets.stocks.forEach(i=>{const v=calcAssetVal(i,'stock');if(v!=null){stockTotal+=v;hasStock=true;}});
-  assets.etf.forEach(i=>{const v=calcAssetVal(i,'etf');if(v!=null){etfTotal+=v;hasEtf=true;}});
+  assets.stocks.forEach(i=>{const v=calcAssetVal(i,'stock');if(v!=null){stockTotal+=v;hasStock=true;if(isDomesticAsset(i))domesticTotal+=v;else foreignTotal+=v;}});
+  assets.etf.forEach(i=>{const v=calcAssetVal(i,'etf');if(v!=null){etfTotal+=v;hasEtf=true;if(isDomesticAsset(i))domesticTotal+=v;else foreignTotal+=v;}});
   assets.cash.forEach(i=>{cashTotal+=(Number(i.amount)||0);});
   const hasPrice=hasCrypto||hasStock||hasEtf;
   const total=cryptoTotal+stockTotal+etfTotal+cashTotal;
-  return {crypto:cryptoTotal,stocks:stockTotal,etf:etfTotal,cash:cashTotal,total,hasPrice};
+  // domestic/foreign은 stocks+etf를 통화(원화/외화) 기준으로 재분류한 파생값.
+  // 기존 crypto/stocks/etf/cash 필드는 기록(history) 스키마 호환을 위해 그대로 둔다.
+  return {crypto:cryptoTotal,stocks:stockTotal,etf:etfTotal,cash:cashTotal,domestic:domesticTotal,foreign:foreignTotal,total,hasPrice};
+}
+// 주식+ETF를 국내/해외(통화 기준)로 합쳐 보여주기 위한 헬퍼.
+// item._kind로 원래 종류(stock/etf)를 기억해 calcAssetVal·시세 조회에 그대로 사용한다.
+function investItems(stocksArr,etfArr){
+  return [...(stocksArr||[]).map(i=>({...i,_kind:'stock'})),...(etfArr||[]).map(i=>({...i,_kind:'etf'}))];
+}
+function isDomesticAsset(item){
+  if(item?.currency) return item.currency==='KRW';
+  return /\.(KS|KQ)$/i.test(String(item?.ticker||''));
+}
+function needsExchangeRate(items){
+  return (items||[]).some(i=>!isDomesticAsset(i));
+}
+function splitByCurrency(items){
+  const domestic=items.filter(isDomesticAsset);
+  const foreign=items.filter(i=>!isDomesticAsset(i));
+  return {domestic,foreign};
 }
 
 // ── 가격 업데이트 ────────────────────────────────────────────
@@ -737,7 +759,7 @@ async function updatePrices(forceRecord=false){
     if(!coinOk) return false; // 코인 미로드면 강제 새로고침이어도 기록 금지
     const items=[...live.stocks,...live.etf].filter(i=>!i.manual);
     const needed=[...live.crypto.map(c=>c.market), ...items.map(i=>i.ticker)];
-    const needsFx=items.some(i=>i.currency==='USD') || live.stocks.some(i=>!i.manual&&i.currency!=='KRW');
+    const needsFx=needsExchangeRate(items);
     const missing=needed.filter(k=>prices[k]==null);      // 실시간도 폴백도 없는 자산
     if(needsFx&&exRate==null) missing.push('USD/KRW');
     const fresh=needed.filter(k=>freshKeys.has(k));         // 이번에 실시간 갱신됨
@@ -954,8 +976,8 @@ function renderContent(t){
 function renderAllocation(t){
   const total=t.total||0;
   const entries=[
-    ['crypto','코인',t.crypto,''],['stocks','주식',t.stocks,'stock'],
-    ['etf','ETF',t.etf,'etf'],['cash','현금',t.cash,'cash'],
+    ['crypto','코인',t.crypto,''],['domestic','국내주식',t.domestic,'stock'],
+    ['foreign','해외주식',t.foreign,'etf'],['cash','현금·기타',t.cash,'cash'],
   ];
   const pct=value=>total?value/total*100:0;
   let cursor=0;
@@ -985,10 +1007,11 @@ function holdingGroup(label,mark,markClass,items,type,total,grandTotal){
   const expanded=!!S.expandedHoldingGroups[type];
   const visibleItems=expanded?items:items.slice(0,2);
   const rows=visibleItems.map(item=>{
-    const value=type==='cash'?Number(item.amount)||0:calcAssetVal(item,type);
-    const code=type==='crypto'?`${item.market} · ${Number(item.qty||0).toLocaleString()}개`:type==='cash'?(item.memo||'원화 자산'):`${item.ticker} · ${Number(item.qty||0).toLocaleString()}주`;
-    const key=type==='crypto'?item.market:item.ticker;
-    const change=type==='cash'?null:priceChanges[key];
+    const kind=item._kind||type;
+    const value=kind==='cash'?Number(item.amount)||0:calcAssetVal(item,kind);
+    const code=kind==='crypto'?`${item.market} · ${Number(item.qty||0).toLocaleString()}개`:kind==='cash'?(item.memo||'원화 자산'):`${item.ticker} · ${Number(item.qty||0).toLocaleString()}주`;
+    const key=kind==='crypto'?item.market:item.ticker;
+    const change=kind==='cash'?null:priceChanges[key];
     return `<div class="holding-row"><div class="holding-name">${escHtml(item.name)}<small>${escHtml(code)}</small></div><div class="holding-value">${value!=null?fmtWShort(value):item.manual?'수동 입력 필요':'시세 대기'}${change!=null?`<small class="${change>=0?'up':'dn'}">${change>=0?'+':''}${change.toFixed(2)}%</small>`:'<small>평가금</small>'}</div></div>`;
   }).join('');
   const share=grandTotal?total/grandTotal*100:0;
@@ -1005,11 +1028,12 @@ function renderHoldings(t){
   const assets=scopedAssets();
   const invest=t.crypto+t.stocks+t.etf;
   const count=assets.crypto.length+assets.stocks.length+assets.etf.length;
+  const {domestic,foreign}=splitByCurrency(investItems(assets.stocks,assets.etf));
   return `<button type="button" class="search-shell" onclick="setV('manage')">⌕　종목명·티커 검색 및 자산 추가</button>
     <div class="summary-strip"><div class="summary-item"><span>투자자산</span><b>${fmtW(invest)}</b></div><div class="summary-item"><span>현금 제외 비중</span><b>${t.total?(invest/t.total*100).toFixed(1):'0.0'}%</b></div></div>
     ${holdingGroup('코인','CO','',assets.crypto,'crypto',t.crypto,t.total)}
-    ${holdingGroup('해외주식','ST','stock',assets.stocks,'stock',t.stocks,t.total)}
-    ${holdingGroup('ETF','ETF','etf',assets.etf,'etf',t.etf,t.total)}
+    ${holdingGroup('국내주식','국내','stock',domestic,'domestic',t.domestic,t.total)}
+    ${holdingGroup('해외주식','해외','etf',foreign,'foreign',t.foreign,t.total)}
     ${holdingGroup('현금·기타','₩','cash',assets.cash,'cash',t.cash,t.total)}
     <div class="fx-note">${count}개 투자 종목 · KRW/USD ${exRate!=null?exRate.toLocaleString():'—'}</div>`;
 }
@@ -1264,7 +1288,8 @@ function renderTotalAssets(t){
 
   // 자산 구성 바 + 요약
   const cPct=grandTotal?((t.crypto/grandTotal)*100).toFixed(1):'0';
-  const sPct=grandTotal?(((t.stocks+t.etf)/grandTotal)*100).toFixed(1):'0';
+  const dPct=grandTotal?((t.domestic/grandTotal)*100).toFixed(1):'0';
+  const fPct=grandTotal?((t.foreign/grandTotal)*100).toFixed(1):'0';
   const cashPct=grandTotal?((cashTotal/grandTotal)*100).toFixed(1):'0';
   h+=`<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:13px 14px;margin-bottom:10px">
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
@@ -1273,10 +1298,11 @@ function renderTotalAssets(t){
     </div>
     <div style="display:flex;height:8px;border-radius:4px;overflow:hidden;gap:2px;margin-bottom:10px">
       <div style="width:${cPct}%;background:#b8860b;border-radius:4px;min-width:${parseFloat(cPct)>0?2:0}px"></div>
-      <div style="width:${sPct}%;background:#1a56b0;border-radius:4px;min-width:${parseFloat(sPct)>0?2:0}px"></div>
+      <div style="width:${dPct}%;background:#1a56b0;border-radius:4px;min-width:${parseFloat(dPct)>0?2:0}px"></div>
+      <div style="width:${fPct}%;background:#2f8f5b;border-radius:4px;min-width:${parseFloat(fPct)>0?2:0}px"></div>
       <div style="width:${cashPct}%;background:#888;border-radius:4px;min-width:${parseFloat(cashPct)>0?2:0}px"></div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
       <div style="text-align:center">
         <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:2px">
           <div style="width:7px;height:7px;border-radius:2px;background:#b8860b"></div>
@@ -1288,10 +1314,18 @@ function renderTotalAssets(t){
       <div style="text-align:center">
         <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:2px">
           <div style="width:7px;height:7px;border-radius:2px;background:#1a56b0"></div>
-          <span style="font-size:11px;color:var(--text2)">주식·ETF</span>
+          <span style="font-size:11px;color:var(--text2)">국내주식</span>
         </div>
-        <div style="font-size:14px;font-weight:600">${sPct}%</div>
-        <div style="font-size:10px;color:var(--text3)">${fmtWShort(t.stocks+t.etf)}</div>
+        <div style="font-size:14px;font-weight:600">${dPct}%</div>
+        <div style="font-size:10px;color:var(--text3)">${fmtWShort(t.domestic)}</div>
+      </div>
+      <div style="text-align:center">
+        <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:2px">
+          <div style="width:7px;height:7px;border-radius:2px;background:#2f8f5b"></div>
+          <span style="font-size:11px;color:var(--text2)">해외주식</span>
+        </div>
+        <div style="font-size:14px;font-weight:600">${fPct}%</div>
+        <div style="font-size:10px;color:var(--text3)">${fmtWShort(t.foreign)}</div>
       </div>
       <div style="text-align:center">
         <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:2px">

@@ -2,10 +2,27 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
+import vm from 'node:vm';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const html = readFileSync(resolve(here, '..', 'assets.html'), 'utf8');
 const css = html.match(/<style>([\s\S]*?)<\/style>/)?.[1] ?? '';
+
+function loadAssetsContext(){
+  const script=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).find(s=>s.includes('function calcTotals'));
+  const context={
+    localStorage:{getItem:()=>null,setItem(){},removeItem(){}},
+    window:{addEventListener(){}},
+    document:{addEventListener(){},getElementById:()=>null,readyState:'complete'},
+    location:{search:''},
+    console,Date,Math,JSON,Number,String,Array,Object,Set,Map,RegExp,URLSearchParams,
+    setTimeout:()=>0,clearTimeout(){},setInterval:()=>0,clearInterval(){},
+    crypto:{randomUUID:()=>'test-id'},
+  };
+  vm.createContext(context);
+  vm.runInContext(script,context);
+  return context;
+}
 
 function declarations(text) {
   return Object.fromEntries(text.split(';').map(part => part.split(/:(.*)/s).slice(0, 2).map(value => value.trim())).filter(([property, value]) => property && value));
@@ -52,7 +69,42 @@ test('renders allocation from live calcTotals values', () => {
   has(/renderAllocation\(t\)/, 'dashboard must render live allocation');
   has(/class="allocation"/, 'missing allocation card');
   has(/class="allocation-donut"/, 'missing allocation visualization');
-  for (const key of ['t.crypto', 't.stocks', 't.etf', 't.cash']) has(new RegExp(key.replace('.', '\\.')), `allocation must use ${key}`);
+  for (const key of ['t.crypto', 't.domestic', 't.foreign', 't.cash']) has(new RegExp(key.replace('.', '\\.')), `allocation must use ${key}`);
+});
+
+test('classifies stocks and ETFs into four display groups without changing storage buckets', () => {
+  const context=loadAssetsContext();
+  vm.runInContext("prices={'KRW-BTC':100,'005930.KS':70000,'371460.KS':10000,'069500.KS':5000,TSLA:200,QQQ:500};exRate=1400",context);
+  const assets={
+    crypto:[{market:'KRW-BTC',qty:1}],
+    stocks:[{id:'dom-stock',name:'삼성전자',ticker:'005930.KS',qty:2,currency:'KRW'},{id:'us-stock',name:'테슬라',ticker:'TSLA',qty:1,currency:'USD'}],
+    etf:[{id:'dom-etf',name:'TIGER ETF',ticker:'371460.KS',qty:3,currency:'KRW'},{id:'legacy-dom-etf',name:'레거시 국내 ETF',ticker:'069500.KS',qty:1},{id:'us-etf',name:'QQQ',ticker:'QQQ',qty:1,currency:'USD'}],
+    cash:[{name:'현금',amount:1000}],
+  };
+  context.__assets=assets;
+  const totals=vm.runInContext('calcTotals(__assets)',context);
+  assert.equal(totals.domestic,175000,'KRW stocks, ETFs, and legacy .KS items must be combined as domestic');
+  assert.equal(totals.foreign,980000,'USD stocks and ETFs must be combined as foreign');
+  assert.equal(totals.stocks,420000,'legacy stocks total must remain available');
+  assert.equal(totals.etf,735000,'legacy ETF total must remain available');
+  const groups=vm.runInContext('splitByCurrency(investItems(__assets.stocks,__assets.etf))',context);
+  assert.deepEqual(Array.from(groups.domestic,item=>item.id),['dom-stock','dom-etf','legacy-dom-etf']);
+  assert.deepEqual(Array.from(groups.foreign,item=>item.id),['us-stock','us-etf']);
+  assert.equal(vm.runInContext("isDomesticAsset({ticker:'123456.kq'})",context),true,'lowercase Korean exchange suffix must be domestic');
+  assert.equal(vm.runInContext("isDomesticAsset({ticker:'005930.KS',currency:'USD'})",context),false,'explicit currency must override ticker inference');
+  assert.equal(vm.runInContext("isDomesticAsset({ticker:'QQQ'})",context),false,'legacy foreign ticker without currency must remain foreign');
+  assert.equal(vm.runInContext("needsExchangeRate([{ticker:'005930.KS'}])",context),false,'legacy domestic stock must not require USD/KRW');
+  assert.equal(vm.runInContext("needsExchangeRate([{ticker:'QQQ'}])",context),true,'legacy foreign ETF must require USD/KRW');
+  assert.equal(vm.runInContext("needsExchangeRate([{ticker:'005930.KS',currency:'USD'}])",context),true,'explicit foreign currency must require USD/KRW');
+  context.__totals=totals;
+  const allocationHtml=vm.runInContext('renderAllocation(__totals)',context);
+  const allocationLabels=Array.from(allocationHtml.matchAll(/<span>(코인|국내주식|해외주식|현금(?:·기타)?)\s+[\d.]+%<\/span>/g),m=>m[1]);
+  assert.deepEqual(allocationLabels,['코인','국내주식','해외주식','현금·기타'],'dashboard allocation must expose exactly the four required labels');
+  const holdingsHtml=vm.runInContext("live=__assets;S.portfolioId='all';S.expandedHoldingGroups={};renderHoldings(__totals)",context);
+  const holdingLabels=Array.from(holdingsHtml.matchAll(/<div class="group-title">[\s\S]*?<b>(.*?)<\/b>/g),m=>m[1]);
+  assert.deepEqual(holdingLabels,['코인','국내주식','해외주식','현금·기타'],'holdings must expose exactly the four required groups');
+  for(const label of ['코인','국내주식','해외주식','현금·기타']) has(new RegExp(`['\"]${label}['\"]`),`missing ${label} display group`);
+  assert.doesNotMatch(html,/holdingGroup\('ETF'/,'ETF must not remain a separate holdings group');
 });
 
 test('provides four bottom navigation destinations including holdings', () => {
