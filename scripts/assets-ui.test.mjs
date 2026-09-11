@@ -8,13 +8,13 @@ const here = dirname(fileURLToPath(import.meta.url));
 const html = readFileSync(resolve(here, '..', 'assets.html'), 'utf8');
 const css = html.match(/<style>([\s\S]*?)<\/style>/)?.[1] ?? '';
 
-function loadAssetsContext(){
+function loadAssetsContext({search=''}={}){
   const script=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).find(s=>s.includes('function calcTotals'));
   const context={
     localStorage:{getItem:()=>null,setItem(){},removeItem(){}},
     window:{addEventListener(){}},
     document:{addEventListener(){},getElementById:()=>null,readyState:'complete'},
-    location:{search:''},
+    location:{search},
     console,Date,Math,JSON,Number,String,Array,Object,Set,Map,RegExp,URLSearchParams,
     setTimeout:()=>0,clearTimeout(){},setInterval:()=>0,clearInterval(){},
     crypto:{randomUUID:()=>'test-id'},
@@ -107,6 +107,43 @@ test('classifies stocks and ETFs into four display groups without changing stora
   assert.doesNotMatch(html,/holdingGroup\('ETF'/,'ETF must not remain a separate holdings group');
 });
 
+test('tracks freshness per ticker and marks delayed quotes instead of presenting them as current', () => {
+  const context=loadAssetsContext();
+  vm.runInContext("priceUpdatedAt={TSLA:'2026-09-11T14:25:00.000Z',BMNR:'2026-09-11T11:30:00.000Z'}",context);
+  assert.equal(vm.runInContext("priceFreshnessLabel('TSLA',Date.parse('2026-09-11T14:30:00.000Z'))",context),'5분 전');
+  assert.equal(vm.runInContext("priceFreshnessLabel('BMNR',Date.parse('2026-09-11T14:30:00.000Z'))",context),'시세 지연 · 3시간 전 ⚠');
+  assert.equal(vm.runInContext("priceFreshnessLabel('QQQ',Date.parse('2026-09-11T14:30:00.000Z'))",context),'시세 시간 확인 불가 ⚠');
+});
+
+test('uses the dedicated relay response and preserves its per-symbol timestamp', async () => {
+  const context=loadAssetsContext();
+  context.window.ASSET_QUOTE_RELAY_URL='https://relay.example';
+  context.fetch=async url=>{
+    assert.equal(String(url),'https://relay.example/quotes?symbols=BMNR%2CTSLA');
+    return {ok:true,json:async()=>({quotes:{BMNR:{price:26.46,change:2.5,updatedAt:'2026-09-11T14:30:00.000Z'}}})};
+  };
+  context.AbortController=AbortController;
+  context.__items=[{ticker:'BMNR'},{ticker:'TSLA'}];
+  const loaded=await vm.runInContext('fetchRelayQuotes(__items)',context);
+  assert.deepEqual(Array.from(loaded),['BMNR']);
+  assert.equal(vm.runInContext('prices.BMNR',context),26.46);
+  assert.equal(vm.runInContext('priceUpdatedAt.BMNR',context),'2026-09-11T14:30:00.000Z');
+  assert.equal(vm.runInContext("freshKeys.has('BMNR')",context),true);
+});
+
+test('persists only freshly updated quote children without replacing timestamp maps', async () => {
+  const context=loadAssetsContext({search:'?room=2402'});
+  context.__patch=null;
+  context.__db={ref:()=>({update:async patch=>{context.__patch=patch;}})};
+  vm.runInContext("db=__db;ROOM='2402';prices={BMNR:26.46,TSLA:364};priceChanges={BMNR:2.5,TSLA:1};priceUpdatedAt={BMNR:'2026-09-11T14:30:00.000Z',TSLA:'2026-09-11T14:20:00.000Z'};freshKeys=new Set(['BMNR'])",context);
+  await vm.runInContext("persistPriceCache('2026-09-11T14:30:00.000Z')",context);
+  assert.equal(context.__patch.BMNR,26.46);
+  assert.equal(context.__patch['timestamps/BMNR'],'2026-09-11T14:30:00.000Z');
+  assert.equal(context.__patch['changes/BMNR'],2.5);
+  assert.equal(context.__patch.timestamps,undefined);
+  assert.equal(context.__patch.TSLA,undefined,'stale prices must not be rewritten as fresh');
+});
+
 test('provides four bottom navigation destinations including holdings', () => {
   has(/class="bottom-nav"/, 'missing fixed bottom navigation');
   for (const [view, label] of [['dashboard', '현황'], ['holdings', '보유자산'], ['history', '기록'], ['manage', '관리']]) {
@@ -182,7 +219,7 @@ test('preserves core data and feature integrations', () => {
 
 let failed = 0;
 for (const { name, fn } of checks) {
-  try { fn(); console.log(`✓ ${name}`); }
+  try { await fn(); console.log(`✓ ${name}`); }
   catch (error) { failed += 1; console.error(`✗ ${name}\n  ${error.message}`); }
 }
 console.log(`\n${checks.length - failed}/${checks.length} checks passed`);

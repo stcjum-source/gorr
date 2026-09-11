@@ -37,14 +37,32 @@ function decodeChanges(raw) {
   return decoded;
 }
 
-function buildFirebasePrices(prices, exRate, changes, source) {
+function buildFirebasePrices(prices, exRate, changes, source, timestamps = {}) {
   const payload = {};
   for (const [key, value] of Object.entries(prices)) {
     if (Number.isFinite(Number(value))) payload[encodePriceKey(key)] = Number(value);
   }
   const encodedChanges = {};
   for (const [key, value] of Object.entries(changes || {})) encodedChanges[encodePriceKey(key)] = value;
-  return { ...payload, exRate, changes: encodedChanges, updatedAt: new Date().toISOString(), ...(source ? { source } : {}) };
+  const encodedTimestamps = {};
+  for (const [key, value] of Object.entries(timestamps || {})) {
+    if (!Number.isNaN(Date.parse(value))) encodedTimestamps[encodePriceKey(key)] = value;
+  }
+  return { ...payload, exRate, changes: encodedChanges, timestamps: encodedTimestamps, updatedAt: new Date().toISOString(), ...(source ? { source } : {}) };
+}
+
+function buildFirebasePricePatch(prices, exRate, changes, source, timestamps = {}, keys = new Set(Object.keys(prices)), fxFresh = true) {
+  const patch = { updatedAt: new Date().toISOString(), ...(source ? { source } : {}) };
+  for (const key of keys) {
+    const value = Number(prices[key]);
+    if (!(Number.isFinite(value) && value > 0)) continue;
+    const encoded = encodePriceKey(key);
+    patch[encoded] = value;
+    if (changes[key] != null) patch[`changes/${encoded}`] = changes[key];
+    if (timestamps[key] && !Number.isNaN(Date.parse(timestamps[key]))) patch[`timestamps/${encoded}`] = timestamps[key];
+  }
+  if (fxFresh && Number.isFinite(Number(exRate)) && Number(exRate) > 0) patch.exRate = Number(exRate);
+  return patch;
 }
 
 // ── 유틸 ──────────────────────────────────────────────────────
@@ -354,6 +372,10 @@ async function main() {
     }
   }
   const freshKeys = new Set();
+  const timestamps = {};
+  for (const [key, value] of Object.entries(cachedPrices.timestamps || {})) {
+    if (!Number.isNaN(Date.parse(value))) timestamps[decodePriceKey(key)] = value;
+  }
 
   log('--- 코인 가격 조회 ---');
   const freshCrypto = await fetchCryptoPrices(cryptos);
@@ -393,11 +415,14 @@ async function main() {
       }
     })
   );
+  const quoteUpdatedAt = new Date().toISOString();
+  freshKeys.forEach(key => { timestamps[key] = quoteUpdatedAt; });
 
   // 장중 가격 캐시 전용 실행. history는 건드리지 않고 Firebase 시세만 갱신한다.
   // 브라우저의 Yahoo/CORS 조회가 실패해도 앱은 이 마지막 서버 가격을 계속 표시한다.
   if (process.env.PRICE_ONLY === '1') {
-    await db.ref(`assets/${ROOM}/prices`).set(buildFirebasePrices(prices, exRate, changes, 'server-cache'));
+    const pricePatch = buildFirebasePricePatch(prices, exRate, changes, 'server-cache', timestamps, freshKeys, fxFresh);
+    await db.ref(`assets/${ROOM}/prices`).update(pricePatch);
     log(`✅ 장중 가격 캐시 갱신: ${Object.keys(prices).length}개`);
     await admin.app().delete();
     return;
@@ -462,10 +487,10 @@ async function main() {
   }
   arr.sort((a, b) => (a.date > b.date ? 1 : -1));
 
-  await db.ref(`assets/${ROOM}`).update({
-    history: arr,
-    prices: buildFirebasePrices(prices, exRate, changes),
-  });
+  const pricePatch = buildFirebasePricePatch(prices, exRate, changes, 'server', timestamps, freshKeys, fxFresh);
+  const roomPatch = { history: arr };
+  for (const [key, value] of Object.entries(pricePatch)) roomPatch[`prices/${key}`] = value;
+  await db.ref(`assets/${ROOM}`).update(roomPatch);
   log(`\n✅ 완료: ${ds} → ${(grand / 1e8).toFixed(2)}억원`);
 
   await admin.app().delete();
@@ -478,4 +503,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { fetchNaverUsPrices, fetchStockPrice, buildFirebasePrices, decodePriceKey };
+module.exports = { fetchNaverUsPrices, fetchStockPrice, buildFirebasePrices, buildFirebasePricePatch, decodePriceKey };
