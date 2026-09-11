@@ -1,9 +1,8 @@
 name: 장중 자산 가격 갱신
 
 on:
-  schedule:
-    # 한국장(UTC 00~06) + 미국장 DST/표준시 범위(UTC 13~21), 평일 15분 간격
-    - cron: '*/15 0-6,13-21 * * 1-5'
+  # 정기 갱신은 Cloudflare Worker Cron이 담당한다.
+  # 이 워크플로는 장애 시 수동 백업 실행용으로만 남긴다.
   workflow_dispatch:
 
 concurrency:

@@ -29,6 +29,7 @@ button,input,select{font:inherit}button{cursor:pointer}.up,.chg-up,.ai-roi.up,.h
 .asset-section{margin-bottom:14px}.sec-title{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;padding:0 2px}.asset-list{overflow:hidden}.asset-item,.manage-item{min-height:52px;display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);gap:8px}.asset-item:last-child,.manage-item:last-child{border-bottom:0}.ai-left,.mi-info{flex:1;min-width:0}.ai-name,.mi-name{font-size:13px;font-weight:600}.ai-sub,.mi-sub{font-size:10px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:6px}.ai-right{text-align:right;flex-shrink:0}.ai-val{font-size:14px;font-weight:750}.ai-roi,.chg-up,.chg-dn{font-size:10px;font-weight:700;margin-top:2px}.pct-badge,.smart-result-type{font-size:9px;padding:2px 6px;border-radius:99px;background:var(--soft);color:var(--muted)}
 .form-box{padding:14px;margin-bottom:10px}.form-box.edit{border:2px solid var(--green)}.fr{margin-bottom:10px}.fr label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:600}.fr input,.fr select,.smart-search-row input{width:100%;min-height:44px;padding:9px 11px;border:1px solid var(--border2);border-radius:var(--rs);font-size:14px;background:var(--bg);color:var(--text);outline:none}.fr input:focus,.fr select:focus,.smart-search-row input:focus{border-color:var(--green)}.fa,.mi-btns{display:flex;gap:7px;margin-top:10px}.btn-s,.btn-c,.add-btn,.smart-add-btn,.smart-search-row button,.sub-tab,.mi-btn,.record-btn{min-height:44px;border-radius:var(--rs);font-weight:700}.btn-s{flex:1;background:var(--green);color:var(--on-green);border:0}.btn-c,.add-btn,.mi-btn{padding:8px 13px;background:var(--bg);border:1px solid var(--border2);color:var(--muted)}.mi-btn.d{color:var(--red);border-color:transparent}.smart-add-btn,.record-btn{width:100%;padding:10px 12px;margin-bottom:10px;background:var(--green);color:var(--on-green);border:0}.smart-search-row{display:flex;gap:7px}.smart-search-row input{flex:1;min-width:0}.smart-search-row button{padding:8px 15px;background:var(--nav);color:#fff;border:0}.smart-status{min-height:16px;margin-top:7px;font-size:11px;color:var(--faint)}.smart-results{max-height:420px;margin-top:8px;border:1px solid var(--border);border-radius:var(--rs);overflow:auto}.smart-result{width:100%;min-height:44px;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 11px;background:var(--bg);border:0;border-bottom:1px solid var(--border);color:var(--text);text-align:left}.smart-result-name{font-size:13px;font-weight:600}.smart-result-sub{font-size:10px;color:var(--faint);margin-top:2px}.sub-tabs{display:flex;gap:6px;margin-bottom:12px}.sub-tab{flex:1;border:1px solid var(--border2);background:var(--bg);color:var(--muted)}.sub-tab.on{background:var(--nav);color:#fff;border-color:var(--nav)}.empty{text-align:center;padding:28px 16px;color:var(--faint)}
 #roomSetup{display:none;position:fixed;inset:0;background:rgba(15,27,20,.78);z-index:999;align-items:center;justify-content:center;padding:20px}.setup-box{background:var(--bg);border-radius:20px;padding:24px;width:100%;max-width:360px}.setup-box h2{font-size:20px;font-weight:850;margin-bottom:9px}.setup-box p{font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.65}.setup-rules{background:var(--green-bg);border-radius:12px;padding:11px 12px;margin-bottom:14px;font-size:11px;color:var(--green);line-height:1.6}.setup-input{width:100%;min-height:48px;padding:12px;border:1.5px solid var(--border2);border-radius:12px;font-size:16px;background:var(--bg);color:var(--text);outline:none;margin-bottom:10px;text-align:center;letter-spacing:2px}.setup-btn{width:100%;min-height:48px;background:var(--green);color:var(--on-green);border:0;border-radius:12px;font-size:15px;font-weight:750}
+.quote-age{color:var(--muted)!important}.quote-age.delayed{color:var(--gold)!important;font-weight:750}
 @media(max-width:360px){.hero-amount{font-size:26px}.allocation-body{gap:11px}.allocation-donut{width:96px;height:96px}.hero-foot{font-size:9px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 </style>
@@ -74,6 +75,7 @@ button,input,select{font:inherit}button{cursor:pointer}.up,.chg-up,.ai-roi.up,.h
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="./asset-symbols.js?v=20260906"></script>
+<script src="./quote-relay-config.js?v=20260911"></script>
 <script>
 // ── 시드 데이터 ──────────────────────────────────────────────
 const SEED_CRYPTO=[{"id":"c1","name":"비트코인","market":"KRW-BTC","qty":0.658706},{"id":"c2","name":"이더리움","market":"KRW-ETH","qty":22.61},{"id":"c3","name":"솔라나","market":"KRW-SOL","qty":72.01},{"id":"c4","name":"리플","market":"KRW-XRP","qty":2612.42},{"id":"c5","name":"도지코인","market":"KRW-DOGE","qty":4437.54},{"id":"c6","name":"에이다","market":"KRW-ADA","qty":5318},{"id":"c7","name":"수이","market":"KRW-SUI","qty":346.46},{"id":"c8","name":"트럼프코인","market":"KRW-TRUMP","qty":145.28},{"id":"c9","name":"랜더토큰","market":"KRW-RENDER","qty":253.837},{"id":"c10","name":"세이","market":"KRW-SEI","qty":42465.19},{"id":"c11","name":"샌드박스","market":"KRW-SAND","qty":2389},{"id":"c12","name":"비체인","market":"KRW-VET","qty":94457.76},{"id":"c13","name":"폴리곤","market":"KRW-POL","qty":1001.01}];
@@ -217,15 +219,22 @@ function splitByCurrency(items){
 }
 
 // ── 가격 업데이트 ────────────────────────────────────────────
-// 타임아웃 fetch (사파리 호환)
-function fetchWithTimeout(url, ms, options={}){
-  return new Promise((resolve, reject)=>{
-    const timer=setTimeout(()=>reject(new Error('timeout')), ms);
-    fetch(url,options).then(r=>{clearTimeout(timer);resolve(r);},(e)=>{clearTimeout(timer);reject(e);});
-  });
+// 응답 본문까지 제한 시간 안에 읽도록 AbortController로 실제 요청을 중단한다.
+async function fetchWithTimeout(url, ms, options={}){
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),ms);
+  try{
+    const response=await fetch(url,{...options,signal:controller.signal});
+    const read=method=>async(...args)=>{try{return await response[method](...args);}finally{clearTimeout(timer);}};
+    return new Proxy(response,{get(target,property){
+      if(['json','text','arrayBuffer','blob','formData'].includes(property)) return read(property);
+      const value=Reflect.get(target,property,target);return typeof value==='function'?value.bind(target):value;
+    }});
+  }catch(error){clearTimeout(timer);throw error;}
 }
 
 let priceChanges = {}; // {ticker: changePercent}
+let priceUpdatedAt = {}; // {ticker: ISO timestamp} — 종목별 마지막 정상 시세 시각
 let autoRefreshId = null;
 let freshKeys = new Set(); // 이번 updatePrices()에서 "실시간" 조회에 성공한 market/ticker
 let priceUpdateInFlight = false; // 화면 로딩 표시와 분리한 중복 조회 잠금
@@ -239,7 +248,7 @@ const decodePriceKey=key=>String(key).replaceAll('__DOT__','.');
 function mergePriceCache(payload){
   if(!payload||typeof payload!=='object') return;
   Object.entries(payload).forEach(([key,value])=>{
-    if(['changes','exRate','updatedAt','source'].includes(key)) return;
+    if(['changes','timestamps','exRate','updatedAt','source'].includes(key)) return;
     const n=Number(value);
     if(Number.isFinite(n)&&n>0) prices[decodePriceKey(key)]=n;
   });
@@ -248,19 +257,78 @@ function mergePriceCache(payload){
   if(payload.changes&&typeof payload.changes==='object'){
     Object.entries(payload.changes).forEach(([key,value])=>{priceChanges[decodePriceKey(key)]=value;});
   }
+  if(payload.timestamps&&typeof payload.timestamps==='object'){
+    Object.entries(payload.timestamps).forEach(([key,value])=>{
+      if(!Number.isNaN(Date.parse(value))) priceUpdatedAt[decodePriceKey(key)]=value;
+    });
+  }
 }
 function restoreLocalPriceCache(){
   try{mergePriceCache(JSON.parse(localStorage.getItem(PRICE_CACHE_KEY)||'null'));}catch(e){}
 }
 function saveLocalPriceCache(updatedAt=new Date().toISOString()){
   const numeric={};
+  const timestamps={};
   Object.entries(prices).forEach(([key,value])=>{
     const n=Number(value);
     if(Number.isFinite(n)&&n>0) numeric[key]=n;
   });
-  try{localStorage.setItem(PRICE_CACHE_KEY,JSON.stringify({...numeric,exRate,changes:priceChanges,updatedAt}));}catch(e){}
+  Object.entries(priceUpdatedAt).forEach(([key,value])=>{if(!Number.isNaN(Date.parse(value))) timestamps[key]=value;});
+  try{localStorage.setItem(PRICE_CACHE_KEY,JSON.stringify({...numeric,exRate,changes:priceChanges,timestamps,updatedAt}));}catch(e){}
 }
 restoreLocalPriceCache();
+
+function applyLiveQuote(key,quote,updatedAt=new Date().toISOString()){
+  const price=Number(quote?.price??quote);
+  if(!(price>0)) return false;
+  prices[key]=price;
+  freshKeys.add(key);
+  const change=Number(quote?.change??quote?.pct);
+  if(Number.isFinite(change)) priceChanges[key]=change;
+  const timestamp=quote?.updatedAt||updatedAt;
+  if(!Number.isNaN(Date.parse(timestamp))) priceUpdatedAt[key]=timestamp;
+  return true;
+}
+
+function priceFreshnessLabel(key,nowMs=Date.now()){
+  const timestamp=priceUpdatedAt[key];
+  const updatedMs=Date.parse(timestamp);
+  if(Number.isNaN(updatedMs)) return '시세 시간 확인 불가 ⚠';
+  const minutes=Math.max(0,Math.floor((nowMs-updatedMs)/60000));
+  const age=minutes<1?'방금 갱신':minutes<60?`${minutes}분 전`:`${Math.floor(minutes/60)}시간 전`;
+  return minutes>15?`시세 지연 · ${age} ⚠`:age;
+}
+
+function quoteRelayUrl(){return String(window.ASSET_QUOTE_RELAY_URL||'').replace(/\/$/,'');}
+async function fetchRelayQuotes(items){
+  const relay=quoteRelayUrl();
+  const symbols=[...new Set((items||[]).map(item=>String(item.ticker||'').toUpperCase()).filter(Boolean))];
+  const loaded=new Set();
+  if(!relay||!symbols.length) return loaded;
+  try{
+    const r=await fetchWithTimeout(`${relay}/quotes?symbols=${encodeURIComponent(symbols.join(','))}`,6500,{cache:'no-store'});
+    if(!r.ok) return loaded;
+    const payload=await r.json();
+    Object.entries(payload?.quotes||{}).forEach(([ticker,quote])=>{
+      if(symbols.includes(ticker)&&applyLiveQuote(ticker,quote)) loaded.add(ticker);
+    });
+  }catch(e){}
+  return loaded;
+}
+
+async function persistPriceCache(updatedAt=new Date().toISOString(),fxFresh=false,source='browser'){
+  saveLocalPriceCache(updatedAt);
+  if(!db||!ROOM) return;
+  const patch={updatedAt,source};
+  freshKeys.forEach(key=>{
+    const encoded=encodePriceKey(key);
+    if(Number.isFinite(Number(prices[key])))patch[encoded]=Number(prices[key]);
+    if(priceChanges[key]!=null)patch[`changes/${encoded}`]=priceChanges[key];
+    if(priceUpdatedAt[key]&&!Number.isNaN(Date.parse(priceUpdatedAt[key])))patch[`timestamps/${encoded}`]=priceUpdatedAt[key];
+  });
+  if(fxFresh&&Number.isFinite(Number(exRate)))patch.exRate=Number(exRate);
+  try{await db.ref(`assets/${ROOM}/prices`).update(patch);}catch(e){}
+}
 
 // 기록 품질 점수 — 클수록 신뢰도 높음. 부실한 값이 좋은 값을 덮지 못하게 하는 데 사용.
 // complete(모두 실시간) > finalized(서버 확정) > stale 개수 적을수록
@@ -587,10 +655,8 @@ async function fetchNaverUsBatch(items){
       const item=entry?.item;
       const p=Number(row.closePriceRaw||String(row.closePrice||'').replace(/,/g,''));
       if(item&&p>0){
-        prices[item.ticker]=p;
-        freshKeys.add(item.ticker);
         const pct=Number(row.fluctuationsRatioRaw||row.fluctuationsRatio);
-        if(Number.isFinite(pct)) priceChanges[item.ticker]=row.compareToPreviousPrice?.code==='5'?-Math.abs(pct):Math.abs(pct);
+        applyLiveQuote(item.ticker,{price:p,change:Number.isFinite(pct)?(row.compareToPreviousPrice?.code==='5'?-Math.abs(pct):Math.abs(pct)):null});
       }
     });
     render();
@@ -622,9 +688,7 @@ async function updatePrices(forceRecord=false){
       const d=await r.json();
       if(Array.isArray(d)&&d.length){
         d.forEach(item=>{
-          prices[item.market]=item.trade_price;
-          freshKeys.add(item.market);
-          if(item.signed_change_rate!=null) priceChanges[item.market]=item.signed_change_rate*100;
+          applyLiveQuote(item.market,{price:item.trade_price,change:item.signed_change_rate!=null?item.signed_change_rate*100:null});
         });
         coinOk=true;
       }
@@ -640,9 +704,7 @@ async function updatePrices(forceRecord=false){
         live.crypto.forEach(c=>{
           const sym=c.market.replace('KRW-','');
           if(d.data[sym]?.closing_price){
-            prices[c.market]=parseFloat(d.data[sym].closing_price);
-            freshKeys.add(c.market);
-            if(d.data[sym].fluctate_rate_24H) priceChanges[c.market]=parseFloat(d.data[sym].fluctate_rate_24H);
+            applyLiveQuote(c.market,{price:parseFloat(d.data[sym].closing_price),change:d.data[sym].fluctate_rate_24H?parseFloat(d.data[sym].fluctate_rate_24H):null});
             coinOk=true;
           }
         });
@@ -687,10 +749,8 @@ async function updatePrices(forceRecord=false){
         const item=items.find(i=>i.ticker.replace(/\.(KS|KQ)$/,'')===String(row.cd));
         const p=Number(row.nv);
         if(item&&p>0){
-          prices[item.ticker]=p;
-          freshKeys.add(item.ticker);
           done.add(item.ticker);
-          if(row.cr!=null) priceChanges[item.ticker]=(String(row.rf)==='5'?-1:1)*Math.abs(Number(row.cr));
+          applyLiveQuote(item.ticker,{price:p,change:row.cr!=null?(String(row.rf)==='5'?-1:1)*Math.abs(Number(row.cr)):null});
         }
       });
       finish();
@@ -704,11 +764,13 @@ async function updatePrices(forceRecord=false){
 
   const naverPromise=naverBatchFetch(domesticItems);
 
-  // 해외주식은 네이버 일괄 조회가 1순위. 매핑 없는 신규 티커만 Yahoo를 바로 시도한다.
-  const naverUsPromise=fetchNaverUsBatch(foreignItems);
-  const yfPromises=unknownForeign.map(item=>
+  // 해외주식은 전용 서버를 1순위로 사용한다. 서버 미설정/실패 시 기존 경로를 유지한다.
+  await fetchRelayQuotes(foreignItems);
+  const relayFailed=foreignItems.filter(item=>!freshKeys.has(item.ticker));
+  const naverUsPromise=fetchNaverUsBatch(relayFailed);
+  const yfPromises=unknownForeign.filter(item=>!freshKeys.has(item.ticker)).map(item=>
     fetchSingleYF(item.ticker).then(result=>{
-      if(result){prices[item.ticker]=result.price;freshKeys.add(item.ticker);if(result.pct!=null)priceChanges[item.ticker]=result.pct;render();}
+      if(result){applyLiveQuote(item.ticker,result);render();}
     }).catch(()=>{})
   );
 
@@ -720,11 +782,11 @@ async function updatePrices(forceRecord=false){
     await Promise.allSettled(naverFailed.map(async item=>{
       // .KS 시도
       let result=await fetchSingleYF(item.ticker).catch(()=>null);
-      if(result){prices[item.ticker]=result.price;freshKeys.add(item.ticker);if(result.pct!=null)priceChanges[item.ticker]=result.pct;render();return;}
+      if(result){applyLiveQuote(item.ticker,result);render();return;}
       // .KQ로도 시도 (KOSDAQ)
       const kqTicker=item.ticker.replace('.KS','.KQ');
       result=await fetchSingleYF(kqTicker).catch(()=>null);
-      if(result){prices[item.ticker]=result.price;freshKeys.add(item.ticker);if(result.pct!=null)priceChanges[item.ticker]=result.pct;render();}
+      if(result){applyLiveQuote(item.ticker,result);render();}
     }));
   }
 
@@ -732,23 +794,15 @@ async function updatePrices(forceRecord=false){
   const foreignFailed=foreignItems.filter(item=>!freshKeys.has(item.ticker));
   if(foreignFailed.length){
     await Promise.allSettled(foreignFailed.map(item=>fetchSingleYF(item.ticker).then(result=>{
-      if(result){prices[item.ticker]=result.price;freshKeys.add(item.ticker);if(result.pct!=null)priceChanges[item.ticker]=result.pct;render();}
+      if(result){applyLiveQuote(item.ticker,result);render();}
     }).catch(()=>{})));
   }
 
   const now=new Date();
   const timeStr=`${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
-  saveLocalPriceCache(now.toISOString());
   // 이번 조회에서 성공한 필드만 갱신한다. 부분 실패가 서버의 마지막 정상가를
   // 통째로 지우는 기존 set() 동작을 막는다.
-  if(db&&ROOM){
-    const encodedChanges={};
-    Object.entries(priceChanges).forEach(([key,value])=>{encodedChanges[encodePriceKey(key)]=value;});
-    const patch={changes:encodedChanges,updatedAt:now.toISOString(),source:'browser'};
-    freshKeys.forEach(key=>{if(Number.isFinite(Number(prices[key]))) patch[encodePriceKey(key)]=Number(prices[key]);});
-    if(fxOk&&Number.isFinite(Number(exRate))) patch.exRate=Number(exRate);
-    db.ref(`assets/${ROOM}/prices`).update(patch);
-  }
+  await persistPriceCache(now.toISOString(),fxOk);
 
   // 오늘 자산 기록 (하이브리드 임시값)
   //  · 실패한 종목은 마지막 정상가(prices에 남아있는 이전 값)로 폴백 → 0으로 사라지지 않음
@@ -817,11 +871,13 @@ async function updatePrices(forceRecord=false){
     const domestic=missing.filter(item=>item.ticker.endsWith('.KS')||item.ticker.endsWith('.KQ'));
     await naverBatchFetch(domestic);
     const foreign=missing.filter(item=>!item.ticker.endsWith('.KS')&&!item.ticker.endsWith('.KQ'));
-    await fetchNaverUsBatch(foreign);
+    await fetchRelayQuotes(foreign);
+    await fetchNaverUsBatch(foreign.filter(item=>!freshKeys.has(item.ticker)));
     const stillMissing=missing.filter(item=>!freshKeys.has(item.ticker));
     await Promise.allSettled(stillMissing.map(item=>
-      fetchSingleYF(item.ticker).then(r=>{if(r){prices[item.ticker]=r.price;freshKeys.add(item.ticker);if(r.pct!=null)priceChanges[item.ticker]=r.pct;}}).catch(()=>{})
+      fetchSingleYF(item.ticker).then(r=>{if(r)applyLiveQuote(item.ticker,r);}).catch(()=>{})
     ));
+    await persistPriceCache(new Date().toISOString(),false,'browser-retry');
     // 재시도 후 기록 시도 (아직 오늘 기록 없으면)
     tryRecord(false);
     render();
@@ -1012,7 +1068,9 @@ function holdingGroup(label,mark,markClass,items,type,total,grandTotal){
     const code=kind==='crypto'?`${item.market} · ${Number(item.qty||0).toLocaleString()}개`:kind==='cash'?(item.memo||'원화 자산'):`${item.ticker} · ${Number(item.qty||0).toLocaleString()}주`;
     const key=kind==='crypto'?item.market:item.ticker;
     const change=kind==='cash'?null:priceChanges[key];
-    return `<div class="holding-row"><div class="holding-name">${escHtml(item.name)}<small>${escHtml(code)}</small></div><div class="holding-value">${value!=null?fmtWShort(value):item.manual?'수동 입력 필요':'시세 대기'}${change!=null?`<small class="${change>=0?'up':'dn'}">${change>=0?'+':''}${change.toFixed(2)}%</small>`:'<small>평가금</small>'}</div></div>`;
+    const freshness=kind==='cash'||item.manual?'':priceFreshnessLabel(key);
+    const freshnessClass=freshness.includes('⚠')?'quote-age delayed':'quote-age';
+    return `<div class="holding-row"><div class="holding-name">${escHtml(item.name)}<small>${escHtml(code)}</small></div><div class="holding-value">${value!=null?fmtWShort(value):item.manual?'수동 입력 필요':'시세 대기'}${change!=null?`<small class="${change>=0?'up':'dn'}">${change>=0?'+':''}${change.toFixed(2)}%</small>`:'<small>평가금</small>'}${freshness?`<small class="${freshnessClass}">${freshness}</small>`:''}</div></div>`;
   }).join('');
   const share=grandTotal?total/grandTotal*100:0;
   const toggle=items.length>2?`<button class="group-toggle" onclick="toggleHoldingGroup('${type}')">${expanded?'접기 ↑':`나머지 ${items.length-2}개 보기 ↓`}</button>`:'';
