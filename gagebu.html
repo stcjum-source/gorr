@@ -79,6 +79,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif;font
 .exp-left{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 .exp-name{font-size:14px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .exp-cat{align-self:flex-start;font-size:10px;font-weight:600;padding:1px 8px;border-radius:99px;line-height:1.5;background:var(--bg2);color:var(--text2)}
+.exp-memo{flex:1;min-width:0;margin:0 8px;font-size:11px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
 .expense-item.actopen .exp-cat{background:var(--bg)}
 .exp-amt{font-size:15px;font-weight:700;white-space:nowrap;display:flex;align-items:center;gap:5px;color:var(--text);font-variant-numeric:tabular-nums}
 .exp-amt.refund,.exp-amt.inc{color:var(--green)}
@@ -681,6 +682,7 @@ function render(){
                 <div class="exp-name">${esc(e.name||'(내용 없음)')}</div>
                 <span class="exp-cat">${esc(e.cat)}</span>
               </div>
+              ${e.memo?`<div class="exp-memo" onclick="${S.selMode?'':`event.stopPropagation();viewMemo('${e.id}')`}">${esc(e.memo)}</div>`:''}
               <div class="exp-amt ${refund?'refund':''}">${refund?'+':'-'}${fmt(e.amt)}${S.selMode?'':`<span class="exp-caret">${open?'▲':'▾'}</span>`}</div>
             </div>
             ${open?`<div class="exp-actions">
@@ -725,7 +727,7 @@ function render(){
           </button>
           ${open?`<div class="cat-detail-list">
             ${catItems.map(e=>`<div class="cat-detail-item">
-              <div class="cat-detail-copy"><div class="cat-detail-name">${esc(e.name||'(내용 없음)')}</div><div class="cat-detail-meta">${esc(e.date?dayLabel(e.date):'날짜 없음')} · ${esc(e.who||'사용자 없음')}</div></div>
+              <div class="cat-detail-copy"><div class="cat-detail-name">${esc(e.name||'(내용 없음)')}</div><div class="cat-detail-meta">${esc(e.date?dayLabel(e.date):'날짜 없음')} · ${esc(e.who||'사용자 없음')}${e.memo?' · '+esc(e.memo):''}</div></div>
               <div class="cat-detail-amount ${Number(e.amt)<0?'refund':''}">${Number(e.amt)<0?'+':'-'}${fmt(e.amt)}</div>
             </div>`).join('')}
           </div>`:''}
@@ -860,6 +862,7 @@ function expFormHtml(e,isE){
       <button onclick="addCat()" style="padding:8px 12px;background:var(--accent);color:var(--bg);border:none;border-radius:var(--r-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">추가</button>
     </div>
     <div class="form-row"><label>세부 내용</label><input type="text" id="fName" placeholder="예: 스타벅스, 이마트" value="${esc(e.name||'')}"></div>
+    <div class="form-row"><label>메모 (선택)</label><input type="text" id="fMemo" placeholder="예: 다이소 생필품, 회식 1차" value="${esc(e.memo||'')}"></div>
     <div class="form-row"><label>금액 (원)</label><input type="number" id="fAmt" inputmode="numeric" placeholder="0" value="${e.amt||''}"></div>
     <div class="form-actions">
       <button class="btn-cancel" onclick="closeForm()">취소</button>
@@ -999,10 +1002,14 @@ function useFav(id){
   render();toast(`${f.name||f.cat||f.type} 오늘 등록됨`);
 }
 // 내역 복사: 같은 내용으로 항상 "오늘(현재 달·현재 날짜)"에 새 항목 등록 (보던 달과 무관)
+function viewMemo(id){
+  const e=getExps(S.month).find(x=>x.id===id);
+  if(e&&e.memo)alert(e.memo);
+}
 function copyExp(id){
   const e=getExps(S.month).find(x=>x.id===id);if(!e)return;
   goTodayCtx();
-  const nit={id:genId('x'),date:todayStr(),cat:e.cat,name:e.name,amt:Number(e.amt)||0,who:e.who};
+  const nit={id:genId('x'),date:todayStr(),cat:e.cat,name:e.name,amt:Number(e.amt)||0,who:e.who,memo:e.memo};
   applyExps(S.month,arr=>[...arr,nit].sort(dsort));render();toast('오늘 날짜로 복사했어요');
 }
 function copyInc(id){
@@ -1661,6 +1668,7 @@ function saveExp(){
   const date=document.getElementById('fDate')?.value||defaultDate();
   const cat=document.getElementById('fCat')?.value||getCats()[0];
   const name=(document.getElementById('fName')?.value||'').trim();
+  const memo=(document.getElementById('fMemo')?.value||'').trim();
   const amtV=document.getElementById('fAmt')?.value||'';
   const amt=Number(amtV);
   if(!amtV.trim()||!Number.isFinite(amt)||amt===0){alert('금액을 입력해주세요');return;}
@@ -1672,15 +1680,15 @@ function saveExp(){
   if(S.editId!=null){
     const id=S.editId;
     if(tm===S.month){
-      applyExps(S.month,arr=>arr.map(x=>x.id===id?{...x,date,cat,name,amt,who}:x).sort(dsort));
+      applyExps(S.month,arr=>arr.map(x=>x.id===id?{...x,date,cat,name,amt,who,memo}:x).sort(dsort));
     }else{
       // 이동: 새 달에 먼저 추가하고 → 옛 달에서 삭제 (중간 실패 시 유실 대신 복구 가능한 중복)
-      applyExps(tm,arr=>[...arr.filter(x=>x.id!==id),{id,date,cat,name,amt,who}].sort(dsort));
+      applyExps(tm,arr=>[...arr.filter(x=>x.id!==id),{id,date,cat,name,amt,who,memo}].sort(dsort));
       applyExps(S.month,arr=>arr.filter(x=>x.id!==id));
     }
   }else{
     const id=genId('x');
-    applyExps(tm,arr=>[...arr.filter(x=>x.id!==id),{id,date,cat,name,amt,who}].sort(dsort));
+    applyExps(tm,arr=>[...arr.filter(x=>x.id!==id),{id,date,cat,name,amt,who,memo}].sort(dsort));
   }
   S.month=tm;S.showForm=false;S.editId=null;S.prefill=null;render();
 }

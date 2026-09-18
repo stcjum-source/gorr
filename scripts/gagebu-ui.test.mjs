@@ -333,6 +333,42 @@ check('Firebase keys and existing feature entry points are preserved', () => {
   ]) has(token);
 });
 
+check('expense form has a separate optional memo field distinct from the merchant name', () => {
+  assert.match(html, /<label>메모 \(선택\)<\/label><input type="text" id="fMemo"[^>]*placeholder="[^"]*"[^>]*value="\$\{esc\(e\.memo\|\|''\)\}"/);
+});
+
+check('saveExp reads the memo field and stores it on both new and edited expenses', () => {
+  const script=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).find(s=>s.includes('function saveExp'));
+  assert.match(script, /const memo=\(document\.getElementById\('fMemo'\)\?\.value\|\|''\)\.trim\(\)/);
+  assert.match(script, /\{\.\.\.x,date,cat,name,amt,who,memo\}/);
+  assert.match(script, /\{id,date,cat,name,amt,who,memo\}/g);
+});
+
+check('a present memo renders as its own small column between the name and the amount, not stacked under the name', () => {
+  assert.match(html, /<\/div>\s*\$\{e\.memo\?`<div class="exp-memo"[\s\S]*?>\$\{esc\(e\.memo\)\}<\/div>`:''\}\s*<div class="exp-amt/);
+  assert.match(html, /cat-detail-meta">\$\{esc\(e\.date\?dayLabel\(e\.date\):'날짜 없음'\)\} · \$\{esc\(e\.who\|\|'사용자 없음'\)\}\$\{e\.memo\?' · '\+esc\(e\.memo\):''\}/);
+});
+
+check('the memo column fills the available middle space and truncates long text', () => {
+  assert.match(html, /\.exp-memo\{[^}]*flex:1[^}]*overflow:hidden[^}]*text-overflow:ellipsis[^}]*white-space:nowrap/);
+});
+
+check('tapping a memo opens the full text separately instead of toggling the row actions', () => {
+  assert.match(html, /\$\{e\.memo\?`<div class="exp-memo"\s+onclick="\$\{S\.selMode\?'':`event\.stopPropagation\(\);viewMemo\('\$\{e\.id\}'\)`\}"/);
+  has('function viewMemo(id)');
+  const script=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).find(s=>s.includes('function viewMemo'));
+  let alerted=null;
+  const context={localStorage:{getItem:()=>null,setItem(){},removeItem(){}},window:{addEventListener(){},scrollY:0,scrollTo(){}},document:{addEventListener(){},querySelector(){return null}},console,Date,Math,JSON,Number,String,Array,Object,Set,Map,RegExp,URLSearchParams,alert:m=>{alerted=m;},crypto:{randomUUID:()=> 'test-id'}};
+  vm.createContext(context); vm.runInContext(script,context);
+  vm.runInContext(`S={month:0};let exps={0:[{id:'x1',memo:'매우 긴 메모 내용이 여기에 들어갑니다 전체를 보고 싶어요'}]};getExps=m=>exps[m]||[];viewMemo('x1');`,context);
+  assert.equal(alerted,'매우 긴 메모 내용이 여기에 들어갑니다 전체를 보고 싶어요');
+});
+
+check('copying an expense to today preserves its memo', () => {
+  const script=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).find(s=>s.includes('function copyExp'));
+  assert.match(script, /cat:e\.cat,name:e\.name,amt:Number\(e\.amt\)\|\|0,who:e\.who,memo:e\.memo/);
+});
+
 if (failures.length) {
   console.error(`\n${failures.length} assertion group(s) failed:\n- ${failures.join('\n- ')}`);
   process.exit(1);
