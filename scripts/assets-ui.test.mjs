@@ -217,6 +217,28 @@ test('preserves core data and feature integrations', () => {
   }
 });
 
+test('demo mode does not require Firebase readiness to refresh prices', async () => {
+  const context=loadAssetsContext({search:'?demo=1'});
+  vm.runInContext('priceUpdateInFlight=true',context);
+  assert.equal(await context.updatePrices(),undefined,'demo refresh must not be blocked by Firebase readiness');
+});
+
+test('entering an existing room waits for Firebase history before recording prices', async () => {
+  const context=loadAssetsContext();
+  const elements={
+    roomCodeInput:{value:'2402'},
+    roomSetup:{style:{}},
+    mainApp:{style:{}},
+  };
+  context.document.getElementById=id=>elements[id]||null;
+  context.setTimeout=()=>0;
+  assert.equal(vm.runInContext('firebaseDataReady',context),false,'Firebase must start in a not-ready state');
+  assert.equal(await context.updatePrices(true),false,'manual recording must be blocked before Firebase history loads');
+  context.__updateCalls=0;
+  vm.runInContext('initFirebase=()=>{};render=()=>{};updatePrices=()=>{__updateCalls+=1};setRoom()',context);
+  assert.equal(context.__updateCalls,0,'setRoom must not record from seed history before Firebase finishes loading');
+});
+
 let failed = 0;
 for (const { name, fn } of checks) {
   try { await fn(); console.log(`✓ ${name}`); }
