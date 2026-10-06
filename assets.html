@@ -670,7 +670,8 @@ function startAutoRefresh(){
 }
 
 async function updatePrices(forceRecord=false){
-  if(priceUpdateInFlight)return;
+  if(!firebaseDataReady&&!DEMO_MODE) return false;
+  if(priceUpdateInFlight) return;
   priceUpdateInFlight=true;
   const runId=++priceUpdateSeq;
   S.loading=true;
@@ -891,7 +892,7 @@ async function updatePrices(forceRecord=false){
 }
 
 
-let firstLoad=true;
+let firstLoad=true, firebaseDataReady=false;
 
 function initFirebase(){
 if(!firebase.apps.length) firebase.initializeApp(FB_CFG);
@@ -909,8 +910,14 @@ db=firebase.database();
       db.ref(`assets/${ROOM}`).set({
         crypto:SEED_CRYPTO,stocks:SEED_STOCKS,etf:SEED_ETF,cash:SEED_CASH,history:[],portfolios:[DEFAULT_PORTFOLIO]
       },()=>{
-        db.ref(`assets/${ROOM}`).on('value',s=>{if(s.val()){live=s.val();if(!S.showForm)render();}});
-        updatePrices(); // 시드 데이터 저장 후 가격 로드
+        db.ref(`assets/${ROOM}`).on('value',s=>{
+          if(s.val()){
+            live=s.val();
+            firebaseDataReady=true;
+            if(!S.showForm)render();
+            if(firstLoad){firstLoad=false;updatePrices();}
+          }
+        });
       });
     }else{
       db.ref(`assets/${ROOM}`).on('value',s=>{
@@ -925,6 +932,7 @@ db=firebase.database();
           live.cash=v.cash||SEED_CASH;
           live.history=v.history||[];
           live.portfolios=normalizePortfolios(v.portfolios);
+          firebaseDataReady=true;
           if(v.prices){
             mergePriceCache(v.prices);
             saveLocalPriceCache(v.prices.updatedAt);
@@ -1604,7 +1612,6 @@ function setRoom(){
   document.getElementById('mainApp').style.display='block';
   initFirebase();
   render();
-  updatePrices();
 }
 function resetRoom(){
   if(!confirm('공유 코드를 초기화할까요?'))return;
